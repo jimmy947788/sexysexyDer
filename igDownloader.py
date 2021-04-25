@@ -14,7 +14,7 @@ username="jimmy947788"
 #L.login(username, password)        # (login)
 #L.interactive_login(username)      # (ask password on terminal)
 
-L.load_session_from_file(username) # (load session created w/
+L.load_session_from_file(username, "C:\\Users\\Jimmy\\AppData\\Local\\Instaloader\\session-jimmy947788") # (load session created w/
                                     #  `instaloader -l USERNAME`)
 
 shortcode = "CNhoYhrhRyL" #https://www.instagram.com/p/COCOx3UnJIG/
