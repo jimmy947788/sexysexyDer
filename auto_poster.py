@@ -21,7 +21,7 @@ ig_session_file ="C:\\Users\\Jimmy Wu\\AppData\\Local\\Instaloader\\session-jimm
 
 fb_page_id  =  "102168518663747"  # 妹不就好棒棒 粉絲專業
 #妹不就好棒棒 用戶權杖
-fb_access_token = "EAAMZB2INCZA8cBABoWBZBibdlgekT7aDORktBTBh2oChjym4Ni1TZAvGgymn38UNkFbGGYS5gqZAnGAu4nJoXxxr3lPqkzYe2CsFLFZBW5FjTn0ZB5CxjkAjBlJJcZAgl7uVhgQhVwKArjfQZCnuWkgyfDMxhjd0ZBSogIOGZCHKHRnkhTiLZCYZCpab950ddIQ2aujiuiW9mMVfGM81DZB6sy10e2"
+fb_access_token = "EAAMZB2INCZA8cBANJfcmC0ZAlvsewXM2GGYiXevyF67ZCyixDbSHFAexCqJeZBeJikO2f7ZCntWZBkZBilU8AuFfZCOfpbXlh2rWjZAKMUYpj5ZCoGz56PdreANVmVGNVz2s1axVi4xB7Ya7gBfytZCIJmZAfQtG0FxP7bEbjaaZBwncKqpMdcpDevWvVQFXn3U3UzZAcRzrVpC2cfkLqkJDbIZAd2nu"
 
 if len(sys.argv) == 2:
     if sys.argv[1] :
