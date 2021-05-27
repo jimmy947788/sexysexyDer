@@ -62,7 +62,7 @@ if len(sys.argv) == 2:
         #graph.put_object(cfg['page_id'],"feed",message='歡迎大家追蹤分享~')
         
         # 上傳圖片
-        img_list = glob.glob(f"{save_path}/*.jpg")
+        img_list = glob.glob(f"{shortcode_folder}/*.jpg")
         imgs_id = []
         for img in img_list:
             photo = open(img, "rb")
@@ -70,26 +70,11 @@ if len(sys.argv) == 2:
             photo.close()
 
         args=dict()
-        args["message"]= f"防疫期間大家在家裡看妹就好，我們有最強大的\"工人智慧\"每天篩選發文。\n如果覺得不錯再幫忙推薦給朋友壯大社群\n#自動發文機器人測試\n\n\nIG 傳送門 {raw_url}"
+        args["message"]= f"防疫期間大家在家裡看妹就好，我們有最強大的\"工人智慧\"每天篩選發文。\n如果覺得不錯再幫忙推薦給朋友壯大社群\n#自動發文機器人測試\n\n\n{post.owner_username}的IG {raw_url}"
         for img_id in imgs_id:
             key="attached_media["+str(imgs_id.index(img_id))+"]"
             args[key]="{'media_fbid': '"+img_id+"'}"
 
         graph.request(path='/me/feed', args=None, post_args=args, method='POST')
-
 else:
     print("please provide IG link")
-"""
-L.load_session_from_file(id_username, ig_session_file) # (load session created w/
-
-shortcode = "CPX1nrTNfxn" #https://www.instagram.com/p/COCOx3UnJIG/
-post = instaloader.Post.from_shortcode(L.context, shortcode)
-
-print(f"owner_username={post.owner_username}")
-
-save_path = f"{post.owner_username}-{shortcode}"
-if not os.path.exists(save_path):
-    os.makedirs(save_path)
-
-L.download_post(post, target=save_path)
-"""
