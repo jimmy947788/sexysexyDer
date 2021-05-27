@@ -1,9 +1,12 @@
+from typing import SupportsComplex
 import facebook
 import instaloader 
 import os
 import sys
 import re
 import glob
+from pathlib import Path
+import shutil
 
 id_username="jimmy947788"
 ig_session_file ="C:\\Users\\Jimmy Wu\\AppData\\Local\\Instaloader\\session-jimmy947788" 
@@ -32,13 +35,24 @@ if len(sys.argv) == 2:
         L = instaloader.Instaloader()
         L.load_session_from_file(id_username, ig_session_file) # (load session created w/
         post = instaloader.Post.from_shortcode(L.context, shortcode)
-        print(f"owner_username={post.owner_username}")
-        save_path = f"{post.owner_username}-{shortcode}"
+        #print(f"owner_username={post.owner_username}")
+        save_path = "downloads" #os.path.join("downloads", f"{post.owner_username}-{shortcode}")
         if not os.path.exists(save_path):
             os.makedirs(save_path)
 
+        print(f"{post.owner_username}'s post {shortcode} downloading....")
         L.download_post(post, target=save_path)
 
+        shortcode_folder = f"downloads/{post.owner_username}/{shortcode}"
+        if not os.path.exists(shortcode_folder):
+            os.makedirs(shortcode_folder)
+
+        print("move downlods file  to shortcode folder")
+        for file in os.listdir(save_path):
+            if ".jpg" in file or ".txt" in file or ".json.xz" in file or ".mp4" in file:
+                src = os.path.join(save_path, file)
+                dst = os.path.join(shortcode_folder, file)
+                shutil.move(src, dst)
         ##############################################################################
         cfg = {
             "page_id" : fb_page_id, 
@@ -47,8 +61,8 @@ if len(sys.argv) == 2:
         graph = facebook.GraphAPI(cfg['access_token'])
         #graph.put_object(cfg['page_id'],"feed",message='歡迎大家追蹤分享~')
         
+        # 上傳圖片
         img_list = glob.glob(f"{save_path}/*.jpg")
-
         imgs_id = []
         for img in img_list:
             photo = open(img, "rb")
