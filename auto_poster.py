@@ -19,9 +19,10 @@ ig_session_file ="C:\\Users\\Jimmy Wu\\AppData\\Local\\Instaloader\\session-jimm
 #L.interactive_login(username)      # (ask password on terminal)
 
 
-fb_page_id  =  "102168518663747"  # 妹不就好棒棒 粉絲專業
+fb_page_id  =  "102168518663747"  # 妹不就好棒棒 粉絲專業ID
+fb_group_id = "360767725261103" # 妹不就好棒棒 社團ID
 #妹不就好棒棒 用戶權杖
-fb_access_token = "EAAMZB2INCZA8cBANJfcmC0ZAlvsewXM2GGYiXevyF67ZCyixDbSHFAexCqJeZBeJikO2f7ZCntWZBkZBilU8AuFfZCOfpbXlh2rWjZAKMUYpj5ZCoGz56PdreANVmVGNVz2s1axVi4xB7Ya7gBfytZCIJmZAfQtG0FxP7bEbjaaZBwncKqpMdcpDevWvVQFXn3U3UzZAcRzrVpC2cfkLqkJDbIZAd2nu"
+fb_access_token = "EAAMZB2INCZA8cBAGYPnfTnAWiFI3ZAGlimXvM53Mkn8EqtgYYkGZAnMB1DcpSgRIl8HQ2S6YDBH2shUBOSDGjgQweeuj0ZB8XIrBPhN4D8Y16pbJ55wxbdgC8AKdftOkrtJNZB2wheD9regoLx2GZAI4azAnNu9LdCHUOYrcBnkb5N33moLiADDzeZCOlSHZBniRz1WGL5s4ZBNAZDZD"
 
 if len(sys.argv) == 2:
     if sys.argv[1] :
@@ -70,11 +71,20 @@ if len(sys.argv) == 2:
             photo.close()
 
         args=dict()
-        args["message"]= f"防疫期間大家在家裡看妹就好\n我們有最強大的\"工人智慧\"每天篩選發文\n如果覺得不錯再幫忙推薦給朋友壯大社群\n#自動發文機器人\n\n\n{post.owner_username}的IG {raw_url}"
+        args["message"]= f"防疫期間大家在家裡看妹就好\n我們有最強大的\"工人智慧\"每天篩選發文\n如果覺得不錯再幫忙推薦給朋友壯大社群\n#自動發文機器人\n\n\n{post.owner_username} IG傳送門 {raw_url}"
         for img_id in imgs_id:
             key="attached_media["+str(imgs_id.index(img_id))+"]"
             args[key]="{'media_fbid': '"+img_id+"'}"
 
-        graph.request(path='/me/feed', args=None, post_args=args, method='POST')
+        ret = graph.request(path='/me/feed', args=None, post_args=args, method='POST')
+        print(f"post result : {ret}")
+
+        ##############################################################################
+        ids = ret["id"].split("_")
+        post_url  = f"https://www.facebook.com/{ids[0]}/posts/{ids[1]}/"
+
+        message = "妹不就好棒棒粉絲專業轉發\n#自動發文機器人"
+        graph.put_object(fb_group_id,'feed', message=message,link=post_url)
+
 else:
     print("please provide IG link")
