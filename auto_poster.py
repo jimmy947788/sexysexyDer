@@ -7,22 +7,22 @@ import re
 import glob
 from pathlib import Path
 import shutil
+import traceback
 
 id_username="jimmy947788"
-ig_session_file ="C:\\Users\\Jimmy Wu\\AppData\\Local\\Instaloader\\session-jimmy947788" 
+ig_session_file="./instaloader-session"
+
 # Optionally, login or load session
 # 不從程式登入因為我的帳號要靠簡訊2階段驗證
-# 先用指令來登入保存session之後 程式只要load session 就好
-# $> instaloader --login=your_username
-#password=""
-#L.login(username, password)        # (login)
-#L.interactive_login(username)      # (ask password on terminal)
-
+# 先用指令來登入保存session之後 程式只要load session 就好 
+# --login={IG帳號}
+# --sessionfie={檔按路徑}
+# $> instaloader --login=jimmy947788 --sessionfile=instaloader-session
 
 fb_page_id  =  "102168518663747"  # 妹不就好棒棒 粉絲專業ID
 fb_group_id = "360767725261103" # 妹不就好棒棒 社團ID
 #妹不就好棒棒 用戶權杖
-fb_access_token = "EAAMZB2INCZA8cBAGYPnfTnAWiFI3ZAGlimXvM53Mkn8EqtgYYkGZAnMB1DcpSgRIl8HQ2S6YDBH2shUBOSDGjgQweeuj0ZB8XIrBPhN4D8Y16pbJ55wxbdgC8AKdftOkrtJNZB2wheD9regoLx2GZAI4azAnNu9LdCHUOYrcBnkb5N33moLiADDzeZCOlSHZBniRz1WGL5s4ZBNAZDZD"
+fb_access_token = "EAAMZB2INCZA8cBABGQVGOIb1JSqcOVae4iay7UBRcjqZCZB4bB0fZCFdL7mFnaQSZAxZBTR3ZB42Sh9y0juCb3heJs7gTj2pmrGfYy0H9It0OVo2vUAcKqBRtMrUnAAU1cAIZCalHGH3KK6NaNIM9QAYGyPe5cluDsNZBdj91P1chLIC9it2Lm8t8t"
 
 if len(sys.argv) == 2:
     if sys.argv[1] :
@@ -35,6 +35,9 @@ if len(sys.argv) == 2:
         # Get instance
         L = instaloader.Instaloader()
         L.load_session_from_file(id_username, ig_session_file) # (load session created w/
+        #L.login(username, password)        # (login)
+        #L.interactive_login(username)      # (ask password on terminal)
+
         post = instaloader.Post.from_shortcode(L.context, shortcode)
         #print(f"owner_username={post.owner_username}")
         save_path = "downloads" #os.path.join("downloads", f"{post.owner_username}-{shortcode}")
@@ -76,15 +79,33 @@ if len(sys.argv) == 2:
             key="attached_media["+str(imgs_id.index(img_id))+"]"
             args[key]="{'media_fbid': '"+img_id+"'}"
 
-        ret = graph.request(path='/me/feed', args=None, post_args=args, method='POST')
+        ret = graph.request(path=f'/{fb_page_id}/feed', args=None, post_args=args, method='POST')
         print(f"post result : {ret}")
 
         ##############################################################################
-        ids = ret["id"].split("_")
-        post_url  = f"https://www.facebook.com/{ids[0]}/posts/{ids[1]}/"
+        try:
+            graph = facebook.GraphAPI(access_token="EAAMZB2INCZA8cBABGQVGOIb1JSqcOVae4iay7UBRcjqZCZB4bB0fZCFdL7mFnaQSZAxZBTR3ZB42Sh9y0juCb3heJs7gTj2pmrGfYy0H9It0OVo2vUAcKqBRtMrUnAAU1cAIZCalHGH3KK6NaNIM9QAYGyPe5cluDsNZBdj91P1chLIC9it2Lm8t8t")
 
-        message = "妹不就好棒棒粉絲專業轉發\n#自動發文機器人"
-        graph.put_object(fb_group_id,'feed', message=message,link=post_url)
+            ids = ret["id"].split("_")
+            post_url  = f"https://www.facebook.com/{ids[0]}/posts/{ids[1]}/"
 
+            message = "妹不就好棒棒粉絲專業轉發\n#自動發文機器人"
+            graph.put_object(fb_group_id,'feed', message=message,link=post_url)
+        except  facebook.GraphAPIError as graphAPIError:
+            print(type(graphAPIError))
+            if graphAPIError is "Unsupported post request.":
+                print("asdasdasds")
+            else:
+                print(graphAPIError)
+        except Exception as e:
+            error_class = e.__class__.__name__ #取得錯誤類型
+            detail = e.args[0] #取得詳細內容
+            cl, exc, tb = sys.exc_info() #取得Call Stack
+            lastCallStack = traceback.extract_tb(tb)[-1] #取得Call Stack的最後一筆資料
+            fileName = lastCallStack[0] #取得發生的檔案名稱
+            lineNum = lastCallStack[1] #取得發生的行號
+            funcName = lastCallStack[2] #取得發生的函數名稱
+            errMsg = "File \"{}\", line {}, in {}: [{}] {}".format(fileName, lineNum, funcName, error_class, detail)
+            print(errMsg)
 else:
     print("please provide IG link")
