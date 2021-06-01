@@ -111,13 +111,16 @@ textarea:-webkit-autofill:focus {
     </head>
     <body>
         <div class="contact-us">
-            <form action="/index">
+            <form method="POST" action="/index">
               <label for="txt_ig_linker">妹不就好棒棒發文工具 <em>&#x2a;</em></label><textarea id="txt_ig_linker" name="txt_ig_linker" required="" rows="4"></textarea>
               <h3>
                   貼上IG連結按下送出即可，目前只能發圖片
               </h3>
               <button id="customerOrder">送出</button>
+              <span style="color:red;">{{ error_message }}</span>
+              <span style="color:green;">{{ message }}</span>
             </form>
           </div>
     </body>
 </html>
+<!-- https://codepen.io/rickyeckhardt/pen/zYGwaKr -->
