@@ -40,6 +40,10 @@ python3 src/app.py
     ```bash
     docker run -it -p 5000:5000 --name sexysexyder-bot --env-file ./.env -v $PWD/logs:/usr/app/logs -v $PWD/downloads:/usr/app/downloads sexysexyder /bin/bash
     ```
+3. 參數說明
+    1. `--env-file` 啟動容器時帶入`.env` 環境變數檔案
+    2. `-v $PWD/logs:/usr/app/logs` 掛載Volumn保存log檔案
+    3. `-v $PWD/downloads:/usr/app/downloads` 掛載Volumn保存IG 所下載檔案
 #### docker 其他指令
 1. 建構Image
     ```bash
