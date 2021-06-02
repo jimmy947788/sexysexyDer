@@ -27,7 +27,7 @@ def index():
                 msg2 = f"發送失敗:{ str(e) }"  
                 post_linker = ""
 
-    return render_template('index.html', title='Welcome', message=msg1, post_linker=post_linker, error_message=msg2)
+    return render_template('index.html', message=msg1, post_linker=post_linker, error_message=msg2)
 
 if __name__ == "__main__":
 
