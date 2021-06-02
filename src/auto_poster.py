@@ -12,8 +12,30 @@ import os
 from dotenv import load_dotenv
 import logging
 
+def load_env():
+    load_dotenv() 
 
-logging.basicConfig(filename='sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+    global  id_username
+    global  ig_session_file
+    global  fb_page_id
+    global  fb_group_id
+    global  fb_access_token
+    global  fb_access_token_hide
+
+    id_username= os.getenv('IG_USERNAME')
+    ig_session_file=  os.getenv('IG_SESSION_FILE')
+    fb_page_id = os.getenv('FB_PAGE_ID')
+    fb_group_id = os.getenv('FB_GROUP_ID')
+    fb_access_token=  os.getenv('FB_ACCESS_TOKEN')
+    fb_access_token_hide = fb_access_token[0:4] + "*****" +  fb_access_token[-4:]
+
+    environment_mesg = "read environment :"
+    environment_mesg += f"id_username={id_username}, "
+    environment_mesg += f"ig_session_file={ig_session_file}, "
+    environment_mesg += f"fb_page_id={fb_page_id}, "
+    environment_mesg += f"fb_group_id={fb_group_id}, "
+    environment_mesg += f"fb_access_token={fb_access_token_hide} "
+    logging.info(environment_mesg)
 
 def ig_downloader(url):
     try:
@@ -65,7 +87,6 @@ def ig_downloader(url):
 
 def fb_post2page(folder, ig_linker):
     try:
-        logging.info("create facebook.GraphAPI object")
         cfg = {
             "page_id" : fb_page_id, 
             "access_token" :  fb_access_token
@@ -100,7 +121,7 @@ def fb_post2page(folder, ig_linker):
 
     except facebook.GraphAPIError as graphAPIError:
         logging.error(graphAPIError.message, graphAPIError)
-        raise Exception("post photo to FB_PAGE has error")
+        raise Exception("post to fb page error")
     except Exception as e:
         error_class = e.__class__.__name__ #取得錯誤類型
         detail = e.args[0] #取得詳細內容
@@ -111,11 +132,10 @@ def fb_post2page(folder, ig_linker):
         funcName = lastCallStack[2] #取得發生的函數名稱
         errMsg = "File \"{}\", line {}, in {}: [{}] {}".format(fileName, lineNum, funcName, error_class, detail)
         logging.error(errMsg,e)
-        raise Exception("post photo to FB_PAGE has error")
+        raise Exception("post to fb page error")
 
 def fb_post2group(post_url):
     try:
-        logging.info("create facebook.GraphAPI object")
         graph = facebook.GraphAPI(access_token=fb_access_token)
 
         message = "妹不就好棒棒粉絲專業轉發\n#自動發文機器人"
@@ -125,7 +145,7 @@ def fb_post2group(post_url):
     except facebook.GraphAPIError as graphAPIError:
         if graphAPIError.message != "Unsupported post request.":
             logging.error(graphAPIError.message, graphAPIError)
-            raise Exception("post photo to FB_GROUP has error")
+            raise Exception("post to fb group error")
     except Exception as e:
         error_class = e.__class__.__name__ #取得錯誤類型
         detail = e.args[0] #取得詳細內容
@@ -136,33 +156,15 @@ def fb_post2group(post_url):
         funcName = lastCallStack[2] #取得發生的函數名稱
         errMsg = "File \"{}\", line {}, in {}: [{}] {}".format(fileName, lineNum, funcName, error_class, detail)
         logging.error(errMsg,e)
-        raise Exception("post photo to FB_GROUP has error")
+        raise Exception("post to fb group error")
 
 if __name__ == '__main__':
-    load_dotenv() 
+    
+    if not os.path.exists("logs"):
+            os.makedirs("logs")
+    logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
-    global  id_username
-    global  ig_session_file
-    global  fb_page_id
-    global  fb_group_id
-    global  fb_access_token
-    global  fb_access_token_hide
-
-    id_username= os.getenv('IG_USERNAME')
-    ig_session_file=  os.getenv('IG_SESSION_FILE')
-    fb_page_id = os.getenv('FB_PAGE_ID')
-    fb_group_id = os.getenv('FB_GROUP_ID')
-    fb_access_token=  os.getenv('FB_ACCESS_TOKEN')
-    fb_access_token_hide = fb_access_token[0:4] + "*****" +  fb_access_token[4:0]
-
-    environment_mesg = "read environment :"
-    environment_mesg += f"id_username={id_username}, "
-    environment_mesg += f"ig_session_file={ig_session_file}, "
-    environment_mesg += f"fb_page_id={fb_page_id}, "
-    environment_mesg += f"fb_group_id={fb_group_id}, "
-    environment_mesg += f"fb_access_token={fb_access_token_hide} "
-    logging.info(environment_mesg)
-
+    load_env()
     if len(sys.argv) == 2:
         if sys.argv[1] :
             ig_linker = sys.argv[1]

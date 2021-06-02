@@ -1,4 +1,9 @@
+src/downloads/
+src/logs/
 downloads/
+logs/
+
+src/__pycache__/
 
 sexsexder.log
 instaloader-session
