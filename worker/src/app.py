@@ -11,31 +11,8 @@ import traceback
 import os
 from dotenv import load_dotenv
 import logging
-
-def load_env():
-    load_dotenv() 
-
-    global  id_username
-    global  ig_session_file
-    global  fb_page_id
-    global  fb_group_id
-    global  fb_access_token
-    global  fb_access_token_hide
-
-    id_username= os.getenv('IG_USERNAME')
-    ig_session_file=  os.getenv('IG_SESSION_FILE')
-    fb_page_id = os.getenv('FB_PAGE_ID')
-    fb_group_id = os.getenv('FB_GROUP_ID')
-    fb_access_token=  os.getenv('FB_ACCESS_TOKEN')
-    fb_access_token_hide = fb_access_token[0:4] + "*****" +  fb_access_token[-4:]
-
-    environment_mesg = "read environment :"
-    environment_mesg += f"id_username={id_username}, "
-    environment_mesg += f"ig_session_file={ig_session_file}, "
-    environment_mesg += f"fb_page_id={fb_page_id}, "
-    environment_mesg += f"fb_group_id={fb_group_id}, "
-    environment_mesg += f"fb_access_token={fb_access_token_hide} "
-    logging.info(environment_mesg)
+import pika
+import time
 
 def ig_downloader(url):
     try:
@@ -158,18 +135,64 @@ def fb_post2group(post_url):
         logging.error(errMsg,e)
         raise Exception("post to fb group error")
 
+def callback(ch, method, properties, body):
+    
+    logging.info(f"wait {post_wait_sec}s ")
+    time.sleep(post_wait_sec)
+    
+    ig_linker = body.decode('utf-8') 
+    print(" [x] Received %r" % ig_linker)
+    logging.info(" [x] Received %r" % ig_linker)
+
+    shortcode_folder = ig_downloader(ig_linker)
+    post_url = fb_post2page(shortcode_folder, ig_linker)
+    fb_post2group(post_url)
+
+QUEUE_NAME="sexsexder"
 if __name__ == '__main__':
     
     if not os.path.exists("logs"):
-            os.makedirs("logs")
+        os.makedirs("logs")
     logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
-    load_env()
-    if len(sys.argv) == 2:
-        if sys.argv[1] :
-            ig_linker = sys.argv[1]
-            shortcode_folder = ig_downloader(ig_linker)
-            post_url = fb_post2page(shortcode_folder, ig_linker)
-            fb_post2group(post_url)
-    else:
-        print("please provide IG link")
+    load_dotenv() 
+
+    global  id_username
+    global  ig_session_file
+    global  fb_page_id
+    global  fb_group_id
+    global  fb_access_token
+    global  post_wait_sec
+
+    id_username= os.getenv('IG_USERNAME')
+    ig_session_file=  os.getenv('IG_SESSION_FILE')
+    fb_page_id = os.getenv('FB_PAGE_ID')
+    fb_group_id = os.getenv('FB_GROUP_ID')
+    fb_access_token= os.getenv('FB_ACCESS_TOKEN')
+    post_wait_sec = int(os.getenv('PSOT_WAIT_SEC'))
+
+    environment_mesg = "read environment :"
+    environment_mesg += f"id_username={id_username}, "
+    environment_mesg += f"ig_session_file={ig_session_file}, "
+    environment_mesg += f"fb_page_id={fb_page_id}, "
+    environment_mesg += f"fb_group_id={fb_group_id}, "
+    environment_mesg += f"fb_access_token={fb_access_token} "
+    logging.info(environment_mesg)
+
+    try:
+        time.sleep(10)
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.getenv('MQ_HOST')))
+        channel = connection.channel()
+
+        channel.queue_declare(queue=QUEUE_NAME)
+        channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+
+        print(' [*] Waiting for messages. To exit press CTRL+C')
+        logging.info(" [*] Waiting for messages. To exit press CTRL+C")
+        channel.start_consuming()
+    except KeyboardInterrupt:
+        print('Interrupted')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)

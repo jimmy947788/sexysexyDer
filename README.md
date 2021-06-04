@@ -70,3 +70,7 @@ python3 src/app.py
 1. 參考  [取得臨時存取權杖](#取得臨時存取權杖) 選取存取權杖
 2. 檢視存取權杖資料 <br>![Alt text](document/長期存取權杖1.JPG)
 3. 延伸存取權杖<br>![Alt text](document/長期存取權杖2.JPG)
+
+
+
+docker run -d -p 5672:5672 -p 15672:15672 -v <log-dir>:/data/log -v <data-dir>:/data/mnesia ronnyroos/rpi-rabbitmq

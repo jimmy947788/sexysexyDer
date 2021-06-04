@@ -1,0 +1,41 @@
+version: "3.9"
+services:
+    rabbitmq:
+        image: ronnyroos/rpi-rabbitmq
+        container_name: mq
+        volumes:
+            - /var/log:/data/log
+            - /usr/data/mnesia:/data/mnesia
+        ports:
+            - 5672:5672
+            - 15672:15672
+    web:
+        build:
+            context: ./web
+        container_name: web
+        volumes:
+            - /var/log/sexsexder:/usr/app/logs
+        ports :
+            - 5000:5000
+        environment:
+            - MQ_HOST=rabbitmq
+        depends_on:
+            - rabbitmq
+    worker:
+        build:
+            context: ./worker
+        container_name: worker
+        volumes:
+            - /var/log/sexsexder:/usr/app/logs
+            - /usr/data/sexsexder/downloads:/usr/app/downloads
+            - ./session:/usr/app/session
+        environment:
+            - MQ_HOST=rabbitmq
+            - IG_USERNAME=jimmy947788
+            - IG_SESSION_FILE=session/instaloader-session
+            - FB_PAGE_ID=102168518663747
+            - FB_GROUP_ID=360767725261103
+            - FB_ACCESS_TOKEN=EAAMZB2INCZA8cBABGQVGOIb1JSqcOVae4iay7UBRcjqZCZB4bB0fZCFdL7mFnaQSZAxZBTR3ZB42Sh9y0juCb3heJs7gTj2pmrGfYy0H9It0OVo2vUAcKqBRtMrUnAAU1cAIZCalHGH3KK6NaNIM9QAYGyPe5cluDsNZBdj91P1chLIC9it2Lm8t8t
+            - PSOT_WAIT_SEC=60
+        depends_on:
+            - rabbitmq
