@@ -148,6 +148,32 @@ def callback(ch, method, properties, body):
     post_url = fb_post2page(shortcode_folder, ig_linker)
     fb_post2group(post_url)
 
+
+
+def main():
+    try:
+        logging.info("sleep 10s waiting container discover rabbitmq")
+        print("sleep 10s waiting container discover rabbitmq")
+        time.sleep(10)
+
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.getenv('MQ_HOST')))
+        channel = connection.channel()
+
+        channel.queue_declare(queue=QUEUE_NAME)
+        channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+
+        print(' [*] Waiting for messages. To exit press CTRL+C')
+        logging.info(" [*] Waiting for messages. To exit press CTRL+C")
+        channel.start_consuming()
+    except pika.exceptions.StreamLostError as streamLostError:
+        main()
+    except KeyboardInterrupt:
+        print('Interrupted')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
+    
 QUEUE_NAME="sexsexder"
 if __name__ == '__main__':
     
@@ -179,20 +205,4 @@ if __name__ == '__main__':
     environment_mesg += f"fb_access_token={fb_access_token} "
     logging.info(environment_mesg)
 
-    try:
-        time.sleep(10)
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.getenv('MQ_HOST')))
-        channel = connection.channel()
-
-        channel.queue_declare(queue=QUEUE_NAME)
-        channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-
-        print(' [*] Waiting for messages. To exit press CTRL+C')
-        logging.info(" [*] Waiting for messages. To exit press CTRL+C")
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        print('Interrupted')
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
+    main()
