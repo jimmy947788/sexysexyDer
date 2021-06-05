@@ -17,9 +17,6 @@ def index():
             post_linker = request.form.get('txt_ig_linker')
             channel.basic_publish(exchange='', routing_key=QUEUE_NAME, body=post_linker)
 
-            queue = channel.queue_declare(queue=QUEUE_NAME) #, durable=True,exclusive=False, auto_delete=False)
-            print(queue.method.message_count)
-
     return render_template('index.html', message="")
 
 @app.route('/GetWaitMessageCount', methods=['GET'])
