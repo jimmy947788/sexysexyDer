@@ -15,6 +15,7 @@ def index():
     if request.method == 'POST':
         if request.form.get('txt_ig_linker'): 
             post_linker = request.form.get('txt_ig_linker')
+            channel = connection.channel()
             channel.basic_publish(exchange='', routing_key=QUEUE_NAME, body=post_linker)
 
     return render_template('index.html', message="")
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     load_dotenv() 
     mqHost = os.getenv("MQ_HOST")
     logging.info(f"mqHost={mqHost }")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(mqHost, heartbeat_interval=0))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(mqHost, heartbeat=0))
     
     app.config['TEMPLATES_AUTO_RELOAD'] = True      
     app.jinja_env.auto_reload = True
