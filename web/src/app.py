@@ -1,6 +1,6 @@
 from flask import Flask, make_response, render_template, request
 import logging
-import os
+import os, sys
 import pika
 import time
 from dotenv import load_dotenv
@@ -31,15 +31,16 @@ if __name__ == "__main__":
 
     if not os.path.exists("logs"):
         os.makedirs("logs")
-    logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+    logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s [web]: %(message)s')
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     global channel 
-    print("sleep 10s waiting container discover rabbitmq")
+    logging.info("sleep 10s waiting container discover rabbitmq")
     time.sleep(10)
 
     load_dotenv() 
     mqHost = os.getenv("MQ_HOST")
-    print(f"mqHost={mqHost }")
+    logging.info(f"mqHost={mqHost }")
     connection = pika.BlockingConnection(pika.ConnectionParameters(mqHost))
     channel = connection.channel()
 
