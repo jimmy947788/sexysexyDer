@@ -127,12 +127,14 @@ textarea:-webkit-autofill:focus {
     <script type="text/javascript">
       var timer;
       $(document).ready(function(){
+        /*
         timer = window.setInterval(function(){
           $.get( "/GetWaitMessageCount", function( count ) {
             $("#labWaitMessageCount").text("目前還有" + count + "篇文等待發送");
             console.log(data)
           });
         }, 3000);
+        */
         
         $(":button").click(function(){
           if($("#txt_ig_linker").val() != "")
