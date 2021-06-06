@@ -21,6 +21,7 @@ def index():
 
 @app.route('/GetWaitMessageCount', methods=['GET'])
 def getWaitMessageCount():
+    channel = connection.channel()
     queue = channel.queue_declare(queue=QUEUE_NAME)
     count = str(queue.method.message_count)
     response = make_response(count, 200)
@@ -34,16 +35,15 @@ if __name__ == "__main__":
     logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s [web]: %(message)s')
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
-    global channel 
+    global connection
     logging.info("sleep 10s waiting container discover rabbitmq")
     time.sleep(10)
 
     load_dotenv() 
     mqHost = os.getenv("MQ_HOST")
     logging.info(f"mqHost={mqHost }")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(mqHost))
-    channel = connection.channel()
-
+    connection = pika.BlockingConnection(pika.ConnectionParameters(mqHost, heartbeat_interval=0))
+    
     app.config['TEMPLATES_AUTO_RELOAD'] = True      
     app.jinja_env.auto_reload = True
     app.run(debug=True, host='0.0.0.0')
