@@ -136,50 +136,25 @@ def fb_post2group(post_url):
         raise Exception("post to fb group error")
 
 def callback(ch, method, properties, body):
-    
-    logging.info(f"wait {post_wait_sec}s ")
+
+    logging.info(f"delay process {post_wait_sec} seconds")
+
     time.sleep(post_wait_sec)
-    
     ig_linker = body.decode('utf-8') 
-    print(" [x] Received %r" % ig_linker)
     logging.info(" [x] Received %r" % ig_linker)
 
     shortcode_folder = ig_downloader(ig_linker)
     post_url = fb_post2page(shortcode_folder, ig_linker)
     fb_post2group(post_url)
-
-
-
-def main():
-    try:
-        logging.info("sleep 10s waiting container discover rabbitmq")
-        print("sleep 10s waiting container discover rabbitmq")
-        time.sleep(10)
-
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.getenv('MQ_HOST')))
-        channel = connection.channel()
-
-        channel.queue_declare(queue=QUEUE_NAME)
-        channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-
-        print(' [*] Waiting for messages. To exit press CTRL+C')
-        logging.info(" [*] Waiting for messages. To exit press CTRL+C")
-        channel.start_consuming()
-    except pika.exceptions.StreamLostError as streamLostError:
-        main()
-    except KeyboardInterrupt:
-        print('Interrupted')
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
+    
     
 QUEUE_NAME="sexsexder"
 if __name__ == '__main__':
     
     if not os.path.exists("logs"):
         os.makedirs("logs")
-    logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+    logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s [worker]: %(message)s')
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     load_dotenv() 
 
@@ -196,13 +171,31 @@ if __name__ == '__main__':
     fb_group_id = os.getenv('FB_GROUP_ID')
     fb_access_token= os.getenv('FB_ACCESS_TOKEN')
     post_wait_sec = int(os.getenv('PSOT_WAIT_SEC'))
+    mq_host = os.getenv('MQ_HOST')
 
     environment_mesg = "read environment :"
     environment_mesg += f"id_username={id_username}, "
     environment_mesg += f"ig_session_file={ig_session_file}, "
     environment_mesg += f"fb_page_id={fb_page_id}, "
     environment_mesg += f"fb_group_id={fb_group_id}, "
-    environment_mesg += f"fb_access_token={fb_access_token} "
+    environment_mesg += f"fb_access_token={fb_access_token}, "
+    environment_mesg += f"mq_host={mq_host} "
     logging.info(environment_mesg)
 
-    main()
+    try:
+        logging.info("sleep 10s waiting container discover rabbitmq")
+        time.sleep(10)
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=mq_host))
+        channel = connection.channel()
+
+        channel.queue_declare(queue=QUEUE_NAME)
+        channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+
+        logging.info(" [*] Waiting for messages. To exit press CTRL+C")
+        channel.start_consuming()
+    except KeyboardInterrupt:
+        logging.info('Interrupted')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
