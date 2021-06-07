@@ -170,7 +170,7 @@ if __name__ == '__main__':
     fb_page_id = os.getenv('FB_PAGE_ID')
     fb_group_id = os.getenv('FB_GROUP_ID')
     fb_access_token= os.getenv('FB_ACCESS_TOKEN')
-    post_wait_sec = int(os.getenv('PSOT_WAIT_SEC'))
+    post_wait_sec = int(os.getenv('POST_WAIT_SEC'))
     mq_host = os.getenv('MQ_HOST')
 
     environment_mesg = "read environment :"

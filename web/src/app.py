@@ -18,7 +18,7 @@ def index():
             channel = connection.channel()
             channel.basic_publish(exchange='', routing_key=QUEUE_NAME, body=post_linker)
 
-    return render_template('index.html', message="")
+    return render_template('index.html', POST_WAIT_SEC=post_wait_sec)
 
 @app.route('/GetWaitMessageCount', methods=['GET'])
 def getWaitMessageCount():
@@ -42,6 +42,8 @@ if __name__ == "__main__":
 
     load_dotenv() 
     mqHost = os.getenv("MQ_HOST")
+    global post_wait_sec
+    post_wait_sec = int(os.getenv('POST_WAIT_SEC'))
     logging.info(f"mqHost={mqHost }")
     connection = pika.BlockingConnection(pika.ConnectionParameters(mqHost, heartbeat=0))
     
