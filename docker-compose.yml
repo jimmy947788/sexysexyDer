@@ -11,11 +11,12 @@ services:
             - RABBITMQ_DEFAULT_USER=sexsexder
             - RABBITMQ_DEFAULT_PASS=1qaz@WSX
         security_opt:
-            - seccomp:unconfined
+            - seccomp:unconfined # 不加入此參數raspberry pi會出錯
     web:
         build:
             context: ./web
         container_name: web
+        restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
         ports :
@@ -31,6 +32,7 @@ services:
         build:
             context: ./worker
         container_name: worker
+        restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
             - /usr/data/sexsexder/downloads:/usr/app/downloads
