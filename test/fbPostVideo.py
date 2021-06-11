@@ -22,10 +22,11 @@ print(response)
 #postId = "891610248363431"
 url = f"https://graph-video.facebook.com/{pageId}/videos?description=影片說明&title=影片title&access_token={token}"
 
-video_path = '198115764_999879234166830_7309441645382858953_n.mp4'
+video_path = '../worker/src/downloads/tw901173/CP8lbmvHzPO/2021-06-10_16-38-08_UTC.mp4'
 files = {'file': open(video_path, 'rb')}
 response = requests.post(url, files=files)
 postId = response.text
-print(postId)
+print(f"https://www.facebook.com/sexysexyDer/videos/{postId}")
 
-#https://www.facebook.com/sexysexyDer/videos/2675481499416528
+#2675481499416528
+#https://www.facebook.com/sexysexyDer/videos/641102857288055
