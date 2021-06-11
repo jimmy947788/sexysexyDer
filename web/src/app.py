@@ -18,7 +18,7 @@ def index():
             channel = connection.channel()
             channel.basic_publish(exchange='', routing_key=QUEUE_NAME, body=post_linker)
 
-    return render_template('index.html', POST_WAIT_SEC=post_wait_sec)
+    return render_template('index.html', POST_DELAY=post_delay)
 
 @app.route('/GetWaitMessageCount', methods=['GET'])
 def getWaitMessageCount():
@@ -37,16 +37,25 @@ if __name__ == "__main__":
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     global connection
-    logging.info("sleep 10s waiting container discover rabbitmq")
-    time.sleep(10)
+    global post_delay
 
     load_dotenv() 
-    mqHost = os.getenv("MQ_HOST")
-    global post_wait_sec
-    post_wait_sec = int(os.getenv('POST_WAIT_SEC'))
-    logging.info(f"mqHost={mqHost }")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(mqHost, heartbeat=0))
-    
+    mq_host = os.getenv("MQ_HOST")
+    mq_user = os.getenv("MQ_USER")
+    mq_pass = os.getenv("MQ_PASS")
+    post_delay = int(os.getenv("POST_DELAY"))
+
+    while True:
+        try:
+            logging.info(f"MQ_HOST={mq_host}, MQ_USER={mq_user}, MQ_PASS={mq_pass}")
+            credentials = pika.PlainCredentials(mq_user, mq_pass)
+            connection = pika.BlockingConnection(pika.ConnectionParameters(mq_host, heartbeat=0, credentials=credentials))
+            logging.info(f"connect to rabbitMQ...")
+            break
+        except pika.exceptions.AMQPConnectionError as error:
+            logging.error("can't find rabbitMQ host...")
+        time.sleep(5)
+
     app.config['TEMPLATES_AUTO_RELOAD'] = True      
     app.jinja_env.auto_reload = True
     app.run(debug=True, host='0.0.0.0')

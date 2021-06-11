@@ -1,5 +1,11 @@
 #!/bin/bash
 
-rsync -avzh --exclude='logs/'  ../web/ pi@192.168.0.105:/home/pi/sexysexyDer/web/
-#rsync -avz --exclude "logs/" --exclude "downloads/" ../worker pi@192.168.0.105:/home/pi/sexysexyDer/worker/
-#scp docker-compose.yml pi@192.168.0.105:/home/pi/sexysexyDer/docker-compose.yml
+rsync -avzh \
+    --exclude logs/ \
+    --exclude downloads/ \
+    --exclude apache2/ \
+    --exclude document/ \
+    --exclude test/ \
+    --exclude README.md \
+    --exclude .git* \
+    ../ pi@192.168.0.105:/home/pi/sexysexyDer/

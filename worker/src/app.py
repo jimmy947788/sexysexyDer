@@ -137,9 +137,9 @@ def fb_post2group(post_url):
 
 def callback(ch, method, properties, body):
 
-    logging.info(f"delay process {post_wait_sec} seconds")
+    logging.info(f"delay process {post_delay} seconds")
+    time.sleep(post_delay)
 
-    time.sleep(post_wait_sec)
     ig_linker = body.decode('utf-8') 
     logging.info(" [x] Received %r" % ig_linker)
 
@@ -163,15 +163,17 @@ if __name__ == '__main__':
     global  fb_page_id
     global  fb_group_id
     global  fb_access_token
-    global  post_wait_sec
+    global  post_delay
 
+    mq_host = os.getenv("MQ_HOST")
+    mq_user = os.getenv("MQ_USER")
+    mq_pass = os.getenv("MQ_PASS")
+    post_delay = int(os.getenv("POST_DELAY"))
     id_username= os.getenv('IG_USERNAME')
     ig_session_file=  os.getenv('IG_SESSION_FILE')
     fb_page_id = os.getenv('FB_PAGE_ID')
     fb_group_id = os.getenv('FB_GROUP_ID')
     fb_access_token= os.getenv('FB_ACCESS_TOKEN')
-    post_wait_sec = int(os.getenv('POST_WAIT_SEC'))
-    mq_host = os.getenv('MQ_HOST')
 
     environment_mesg = "read environment :"
     environment_mesg += f"id_username={id_username}, "
@@ -180,22 +182,23 @@ if __name__ == '__main__':
     environment_mesg += f"fb_group_id={fb_group_id}, "
     environment_mesg += f"fb_access_token={fb_access_token}, "
     environment_mesg += f"mq_host={mq_host} "
+    environment_mesg += f"post_delay={post_delay} "
     logging.info(environment_mesg)
 
-    try:
-        logging.info("sleep 10s waiting container discover rabbitmq")
-        time.sleep(10)
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=mq_host))
-        channel = connection.channel()
-
-        channel.queue_declare(queue=QUEUE_NAME)
-        channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-
-        logging.info(" [*] Waiting for messages. To exit press CTRL+C")
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        logging.info('Interrupted')
+    while True:
         try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
+            logging.info(f"MQ_HOST={mq_host}, MQ_USER={mq_user}, MQ_PASS={mq_pass}")
+            credentials = pika.PlainCredentials(mq_user, mq_pass)
+            connection = pika.BlockingConnection(pika.ConnectionParameters(mq_host, heartbeat=0, credentials=credentials))
+            logging.info(f"connect to rabbitMQ...")
+            break
+        except pika.exceptions.AMQPConnectionError as error:
+            logging.error("can't find rabbitMQ host...")
+        time.sleep(5)
+    
+    channel = connection.channel()
+    channel.queue_declare(queue=QUEUE_NAME)
+    channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+
+    logging.info(" [*] Waiting for messages. To exit press CTRL+C")
+    channel.start_consuming()

@@ -1,4 +1,4 @@
-FROM balenalib/raspberry-pi-debian-python:latest
+FROM python:3.8-slim-buster
 
 WORKDIR /usr/app
 

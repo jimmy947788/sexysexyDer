@@ -1,14 +1,17 @@
 version: "3.9"
 services:
     rabbitmq:
-        image: ronnyroos/rpi-rabbitmq
+        image: rabbitmq:3.8.17-management-alpine
         container_name: mq
-        volumes:
-            - /var/log:/data/log
-            - /usr/data/mnesia:/data/mnesia
+        hostname: rabbitmq.local
         ports:
             - 5672:5672
             - 15672:15672
+        environment:
+            - RABBITMQ_DEFAULT_USER=sexsexder
+            - RABBITMQ_DEFAULT_PASS=1qaz@WSX
+        security_opt:
+            - seccomp:unconfined
     web:
         build:
             context: ./web
@@ -18,8 +21,10 @@ services:
         ports :
             - 5000:5000
         environment:
-            - MQ_HOST=rabbitmq
-            - POST_WAIT_SEC=120
+            - MQ_HOST=rabbitmq.local
+            - MQ_USER=sexsexder
+            - MQ_PASS=1qaz@WSX
+            - POST_DELAY=120
         depends_on:
             - rabbitmq
     worker:
@@ -31,12 +36,14 @@ services:
             - /usr/data/sexsexder/downloads:/usr/app/downloads
             - ./session:/usr/app/session
         environment:
-            - MQ_HOST=rabbitmq
+            - MQ_HOST=rabbitmq.local
+            - MQ_USER=sexsexder
+            - MQ_PASS=1qaz@WSX
             - IG_USERNAME=jimmy947788
             - IG_SESSION_FILE=session/instaloader-session
             - FB_PAGE_ID=102168518663747
             - FB_GROUP_ID=360767725261103
             - FB_ACCESS_TOKEN=EAAMZB2INCZA8cBABGQVGOIb1JSqcOVae4iay7UBRcjqZCZB4bB0fZCFdL7mFnaQSZAxZBTR3ZB42Sh9y0juCb3heJs7gTj2pmrGfYy0H9It0OVo2vUAcKqBRtMrUnAAU1cAIZCalHGH3KK6NaNIM9QAYGyPe5cluDsNZBdj91P1chLIC9it2Lm8t8t
-            - POST_WAIT_SEC=120
+            - POST_DELAY=120
         depends_on:
             - rabbitmq
