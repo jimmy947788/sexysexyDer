@@ -60,7 +60,7 @@ def ig_downloader(url):
             image_file = video_file.replace(".mp4", ".jpg")
             os.remove(image_file)
 
-        return (post.owner_username, shortcode_folder)
+        return (post.owner_username, shortcode, shortcode_folder)
 
     except Exception as e:
         error_class = e.__class__.__name__ #取得錯誤類型
@@ -198,18 +198,18 @@ def callback(ch, method, properties, body):
     ig_linker = body.decode('utf-8') 
     logging.info(" [x] Received %r" % ig_linker)
 
-    (ig_owner, shortcode_folder) = ig_downloader(ig_linker)
+    (ig_owner, shortcode, shortcode_folder) = ig_downloader(ig_linker)
     post_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker)
     if post_url:
         logging.info(f"post_url: {post_url}")
-        logging.info(f"share photos to FB Group after {post_delay}s")
+        logging.info(f"share {shortcode} photos to FB Group after {post_delay}s")
         time.sleep(post_delay)
         fb_share_post2group(post_url)
 
     post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker)
     for post_url in post_video_urls:
         logging.info(f"post_url: {post_url}")
-        logging.info(f"share video to FB Group after {post_delay}s")
+        logging.info(f"share {shortcode} video to FB Group after {post_delay}s")
         time.sleep(post_delay)
         fb_share_post2group(post_url)
     
