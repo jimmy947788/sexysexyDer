@@ -44,17 +44,11 @@ if __name__ == "__main__":
     mq_user = os.getenv("MQ_USER")
     mq_pass = os.getenv("MQ_PASS")
     post_delay = int(os.getenv("POST_DELAY"))
-
-    while True:
-        try:
-            logging.info(f"MQ_HOST={mq_host}, MQ_USER={mq_user}, MQ_PASS={mq_pass}")
-            credentials = pika.PlainCredentials(mq_user, mq_pass)
-            connection = pika.BlockingConnection(pika.ConnectionParameters(mq_host, heartbeat=0, credentials=credentials))
-            logging.info(f"connect to rabbitMQ...")
-            break
-        except pika.exceptions.AMQPConnectionError as error:
-            logging.error("can't find rabbitMQ host...")
-        time.sleep(5)
+    
+    logging.info(f"MQ_HOST={mq_host}, MQ_USER={mq_user}, MQ_PASS={mq_pass}")
+    credentials = pika.PlainCredentials(mq_user, mq_pass)
+    connection = pika.BlockingConnection(pika.ConnectionParameters(mq_host, heartbeat=0, credentials=credentials))
+    logging.info(f"connect to rabbitMQ...")
 
     app.config['TEMPLATES_AUTO_RELOAD'] = True      
     app.jinja_env.auto_reload = True
