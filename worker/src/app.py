@@ -24,37 +24,28 @@ def ig_downloader(url):
         regex = re.compile(r'^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com.*\/p\/)([\d\w\-_]+)(?:\/)?(\?.*)?$')
         match = regex.search(url)
         shortcode = match.group(1)
-        logging.info(f"get shortcode : {shortcode}")
+        logging.info(f"shortcode : {shortcode}")
 
-        # Get instance
-        L = instaloader.Instaloader()
-        L.load_session_from_file(id_username, ig_session_file) # (load session created w/
-        #L.login(username, password)        # (login)
-        #L.interactive_login(username)      # (ask password on terminal)
+        post = instaloader.Post.from_shortcode(ig_loader.context, shortcode)
 
-        post = instaloader.Post.from_shortcode(L.context, shortcode)
-        #print(f"owner_username={post.owner_username}")
-        save_path = "downloads" #os.path.join("downloads", f"{post.owner_username}-{shortcode}")
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        logging.info(f"post {shortcode} downlaoding...")
+        ig_loader.download_post(post, target=ig_download_folder.split("/")[-1])
 
-        logging.info(f"IG post downlaod now... ( shortcode: {shortcode})")
-        L.download_post(post, target=save_path)
-
-        shortcode_folder = f"downloads/{post.owner_username}/{shortcode}"
+        shortcode_folder = os.path.join(ig_download_folder, f"{post.owner_username}/{shortcode}")
+        logging.info(f"check shortcode folder is {shortcode_folder}")
         if not os.path.exists(shortcode_folder):
             os.makedirs(shortcode_folder)
 
         # 搬移下載檔案到路徑 {IG帳號}/{shortcode}
-        logging.info(f"move downlods file to shortcode folder (path : {shortcode_folder})")
-        for file in os.listdir(save_path):
+        logging.info(f"move file to shortcode folder.")
+        for file in os.listdir(ig_download_folder):
             if ".jpg" in file or ".txt" in file or ".json.xz" in file or ".mp4" in file:
-                src = os.path.join(save_path, file)
+                src = os.path.join(ig_download_folder, file)
                 dst = os.path.join(shortcode_folder, file)
                 shutil.move(src, dst)
         
         # 刪除影片封面
-        logging.info(f"remove video cover from shortcode folder (path : {shortcode_folder})")
+        logging.info(f"remove video cover from shortcode folder.")
         video_file_list = glob.glob(f"{shortcode_folder}/*.mp4")
         for video_file in video_file_list:
             image_file = video_file.replace(".mp4", ".jpg")
@@ -197,68 +188,96 @@ def fb_share_post2group(post_url):
 def callback(ch, method, properties, body):
     ig_linker = body.decode('utf-8') 
     logging.info(" [x] Received %r" % ig_linker)
+    try:
+        (ig_owner, shortcode, shortcode_folder) = ig_downloader(ig_linker)
+        post_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker)
+        if post_url:
+            logging.info(f"post_url: {post_url}")
+            logging.info(f"share {shortcode} photos to FB Group after {post_delay}s")
+            time.sleep(post_delay)
+            fb_share_post2group(post_url)
 
-    (ig_owner, shortcode, shortcode_folder) = ig_downloader(ig_linker)
-    post_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker)
-    if post_url:
-        logging.info(f"post_url: {post_url}")
-        logging.info(f"share {shortcode} photos to FB Group after {post_delay}s")
-        time.sleep(post_delay)
-        fb_share_post2group(post_url)
+        post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker)
+        for post_url in post_video_urls:
+            logging.info(f"post_url: {post_url}")
+            logging.info(f"share {shortcode} video to FB Group after {post_delay}s")
+            time.sleep(post_delay)
+            fb_share_post2group(post_url)
+    except Exception as e:
+        logging.error("consuming error", e)
+    finally:
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+    
 
-    post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker)
-    for post_url in post_video_urls:
-        logging.info(f"post_url: {post_url}")
-        logging.info(f"share {shortcode} video to FB Group after {post_delay}s")
-        time.sleep(post_delay)
-        fb_share_post2group(post_url)
-    
-    
-QUEUE_NAME="sexsexder"
 if __name__ == '__main__':
-    
-    if not os.path.exists("logs"):
-        os.makedirs("logs")
-    logging.basicConfig(filename='./logs/sexsexder.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s [worker]: %(message)s')
-    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    global ig_loader
+    global ig_download_folder
+    global fb_page_id
+    global fb_group_id
+    global fb_access_token
+    global post_delay
+    global mq_name
 
     load_dotenv() 
-
-    global  id_username
-    global  ig_session_file
-    global  fb_page_id
-    global  fb_group_id
-    global  fb_access_token
-    global  post_delay
-
+    
     mq_host = os.getenv("MQ_HOST")
-    mq_user = os.getenv("MQ_USER")
-    mq_pass = os.getenv("MQ_PASS")
+    mq_port = int(os.getenv("MQ_PORT"))
+    mq_web_host = int(os.getenv("MQ_WEB_PORT"))
+    mq_name = os.getenv("MQ_NAME")
+    mq_user = os.getenv("RABBITMQ_DEFAULT_USER")
+    mq_pass = os.getenv("RABBITMQ_DEFAULT_PASS")
     post_delay = int(os.getenv("POST_DELAY"))
     id_username= os.getenv('IG_USERNAME')
-    ig_session_file=  os.getenv('IG_SESSION_FILE')
+    ig_session_file = os.getenv('IG_SESSION_FILE')
+    ig_download_folder = os.getenv("IG_DOWNLOAD_FOLDER")
     fb_page_id = os.getenv('FB_PAGE_ID')
     fb_group_id = os.getenv('FB_GROUP_ID')
     fb_access_token= os.getenv('FB_ACCESS_TOKEN')
+    log_folder = os.getenv('LOG_FOLDER')
+    log_level = os.getenv('LOG_LEVEL')
 
-    environment_mesg = "read environment :"
-    environment_mesg += f"id_username={id_username}, "
-    environment_mesg += f"ig_session_file={ig_session_file}, "
-    environment_mesg += f"fb_page_id={fb_page_id}, "
-    environment_mesg += f"fb_group_id={fb_group_id}, "
-    environment_mesg += f"fb_access_token={fb_access_token}, "
-    environment_mesg += f"mq_host={mq_host} "
-    environment_mesg += f"post_delay={post_delay} "
-    logging.info(environment_mesg)
+    env_text = "Load environment variables:\n"
+    env_text += f"\tMQ_HOST={mq_host}\n"
+    env_text += f"\tMQ_PORT={mq_port}\n"
+    env_text += f"\tMQ_WEB_PORT={mq_web_host}\n"
+    env_text += f"\tMQ_NAME={mq_name}\n"
+    env_text += f"\tMQ_USER={mq_user}\n"
+    env_text += f"\tMQ_PASS={mq_pass}\n"
+    env_text += f"\tPOST_DELAY={post_delay}\n"
+    env_text += f"\tIG_USERNAME={id_username}\n "
+    env_text += f"\tIG_SESSION_FILE={ig_session_file}\n"
+    env_text += f"\tIG_DOWNLOAD_FOLDER={ig_download_folder}\n"
+    env_text += f"\tFB_PAGE_ID={fb_page_id}\n"
+    env_text += f"\tFB_GROUP_ID={fb_group_id}\n"
+    env_text += f"\tFB_ACCESS_TOKEN={fb_access_token}\n"
+    env_text += f"\tLOG_FOLDER={log_folder}\n"
+    env_text += f"\tLOG_LEVEL={log_level}\n"
 
-    logging.info(f"MQ_HOST={mq_host}, MQ_USER={mq_user}, MQ_PASS={mq_pass}")
+    if not os.path.exists(log_folder):
+        os.makedirs(log_folder)
+    log_file = os.path.join(log_folder, 'sexsexder-worker.log')
+    if log_level.upper() == "DEBUG":
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+    logging.basicConfig(filename=log_file, level=log_level, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s [worker]: %(message)s')
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+    logging.info(env_text)
+
+    # Get instance
+    ig_loader = instaloader.Instaloader()
+    ig_loader.load_session_from_file(id_username, ig_session_file) 
+    logging.info(f"create ig_loader from IG session file.")
+
     credentials = pika.PlainCredentials(mq_user, mq_pass)
-    connection = pika.BlockingConnection(pika.ConnectionParameters(mq_host, heartbeat=0, credentials=credentials))
+    parameters = pika.ConnectionParameters(host=mq_host, port=mq_port, credentials=credentials, heartbeat=0)
+    connection = pika.BlockingConnection(parameters)
     logging.info(f"connect to rabbitMQ...")
 
     channel = connection.channel()
-    channel.queue_declare(queue=QUEUE_NAME)
-    channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-
+    channel.queue_declare(queue=mq_name)
+    channel.basic_consume(queue=mq_name, on_message_callback=callback, auto_ack=False)
+    
     logging.info(" [*] Waiting for messages. To exit press CTRL+C")
     channel.start_consuming()

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 rsync -avzh \
+    --exclude session/ \
     --exclude logs/ \
     --exclude downloads/ \
     --exclude apache2/ \

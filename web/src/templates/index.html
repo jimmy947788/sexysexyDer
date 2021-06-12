@@ -116,9 +116,11 @@ textarea:-webkit-autofill:focus {
             <form method="POST" action="/index" >
               <label for="txt_ig_linker">妹不就好棒棒發文工具 <em>&#x2a;</em></label><textarea id="txt_ig_linker" name="txt_ig_linker" required="" rows="4"></textarea>
               <h3>
-                  貼上IG連結按下送出即可，支援發圖片和影片<span id="labWaitMessageCount" style="color:blue;">(每篇文間隔 {{ POST_DELAY }}秒發送 )</span> 
+                  貼上IG連結按下送出即可，支援發圖片和影片(每篇文間隔 <span style="color:blue;">{{ POST_DELAY }}</span>秒發送 ) 
               </h3>
-              <span id="labWaitMessageCount" style="color:blue;"></span>
+              <h3>
+                目前還有<span id="labWaitMessageCount" style="color:blue;"></span>篇文等待發送
+              </h3>
               <br/>
               <button >送出</button>
             </form>
@@ -127,14 +129,12 @@ textarea:-webkit-autofill:focus {
     <script type="text/javascript">
       var timer;
       $(document).ready(function(){
-        /*
         timer = window.setInterval(function(){
           $.get( "/GetWaitMessageCount", function( count ) {
-            $("#labWaitMessageCount").text("目前還有" + count + "篇文等待發送");
+            $("#labWaitMessageCount").text(count );
             console.log(data)
           });
-        }, 3000);
-        */
+        }, 2000);
         
         $(":button").click(function(){
           if($("#txt_ig_linker").val() != "")
