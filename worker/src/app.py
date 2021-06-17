@@ -171,6 +171,7 @@ def fb_share_post2group(post_url):
 
     except facebook.GraphAPIError as graphAPIError:
         if graphAPIError.message != "Unsupported post request.":
+            logging.info(graphAPIError.message)
             logging.error(graphAPIError.message, graphAPIError)
             raise Exception("share post to group error")
     except Exception as e:
