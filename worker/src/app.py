@@ -304,34 +304,42 @@ if __name__ == '__main__':
     logging.info(f"create ig_loader from IG session file.")
 
     while True:
-        (shortcode, message, ig_linker, status, createTime, postTime)  = post_dequeue()
-        if shortcode:
-            logging.info(f"[step.1] Download IG post from  {ig_linker}")
-            (ig_owner, shortcode, shortcode_folder) = ig_downloader(ig_linker)
+        try:
+            (shortcode, message, ig_linker, status, createTime, postTime)  = post_dequeue()
+            if shortcode:
+                logging.info(f"[step.1] Download IG post from  {ig_linker}")
+                (ig_owner, shortcode, shortcode_folder) = ig_downloader(ig_linker)
 
-            logging.info(f"[step.2] Post {shortcode} pictures to FB page")
-            post_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker, message)
-            update_status(shortcode, 1)
+                logging.info(f"[step.2] Post {shortcode} pictures to FB page")
+                post_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker, message)
+                update_status(shortcode, 1)
 
-            logging.info(f"[step.3] Post {shortcode} video to FB page")
-            post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker, message)
-            update_status(shortcode, 2)
+                logging.info(f"[step.3] Post {shortcode} video to FB page")
+                post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker, message)
+                update_status(shortcode, 2)
 
-            if post_url:
-                logging.debug(f"post_url: {post_url}")
-                logging.info(f"[step.4] share {shortcode} photos to FB Group after {post_delay}s")
-                fb_share_post2group(post_url)
-                update_status(shortcode, 3)
+                if post_url:
+                    logging.debug(f"post_url: {post_url}")
+                    logging.info(f"[step.4] share {shortcode} photos to FB Group after {post_delay}s")
+                    fb_share_post2group(post_url)
+                    update_status(shortcode, 3)
 
-            for post_url in post_video_urls:
-                logging.debug(f"post_url: {post_url}")
-                logging.info(f"[step.5]  share {shortcode} video to FB Group after {post_delay}s")
-                fb_share_post2group(post_url)
-                update_status(shortcode, 4)
+                for post_url in post_video_urls:
+                    logging.debug(f"post_url: {post_url}")
+                    logging.info(f"[step.5]  share {shortcode} video to FB Group after {post_delay}s")
+                    fb_share_post2group(post_url)
+                    update_status(shortcode, 4)
 
-            update_status(shortcode, 5)
-            logging.info(f"[step.6]  sleep {post_delay}s fot next post ")
-            time.sleep(post_delay)
-        else:
-            logging.info(f"no post enqueue, wait 10 second ")
+                update_status(shortcode, 5)
+                logging.info(f" **** sleep {post_delay}s fot next post **** ")
+                time.sleep(post_delay)
+            else:
+                logging.info(f"no post in queue, wait 10 seconds ")
+                time.sleep(10)
+        except Exception as e:
+            logging.error(str(e), exc_info=e)
+            logging.info(f"have some error, wait 10 seconds ")
             time.sleep(10)
+        
+        
+            
