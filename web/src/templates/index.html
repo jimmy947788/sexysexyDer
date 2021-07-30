@@ -1,150 +1,292 @@
 <html>
     <head>
         <title>妹不就好棒棒發文工具</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.js"></script>
-        <style type="text/css">
-            @import url("https://fonts.googleapis.com/css?family=Spartan&display=swap");
-* {
-  margin: 0;
-  padding: 0;
-}
+        <meta charset="utf-8">
+        <!--[if IE]>
+              <meta http-equiv="X-UA-Compatible" content="IE=edge">
+          <![endif]-->
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
 
-body {
-  background: url("https://s3-us-west-2.amazonaws.com/s.cdpn.io/38816/image-from-rawpixel-id-2044837-jpeg.jpg") center center no-repeat;
-  background-size: cover;
-  width: 100vw;
-  height: 100vh;
-  display: grid;
-  align-items: center;
-  justify-items: center;
-  font-size: 12pt;
-  font-family: "Spartan";
-  color: #2A293E;
-}
+      <link rel="stylesheet" href="{{ url_for('static', filename='styles/bootstrap.min.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='styles/main.css') }}" id="color-switcher-link">
+      <link rel="stylesheet" href="{{ url_for('static', filename='styles/animations.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='styles/fonts.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='styles/jquery-ui.min.css') }}">
 
-.contact-us {
-  background: #f8f4e5;
-  padding: 50px 100px;
-  border-top: 10px solid #f45702;
-}
-
-label, input, textarea {
-  display: block;
-  width: 100%;
-  font-size: 12pt;
-  line-height: 24pt;
-  font-family: "Spartan";
-}
-
-input {
-  margin-bottom: 24pt;
-}
-
-h3 {
-  font-weight: normal;
-  font-size: 10pt;
-  line-height: 24pt;
-  font-style: italic;
-  margin: 0 0 0.5em 0;
-}
-
-span {
-  font-size: 8pt;
-}
-
-em {
-  color: #f45702;
-  font-weight: bold;
-}
-
-input, textarea {
-  border: none;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 2px;
-  background: #f8f4e5;
-  padding-left: 5px;
-  outline: none;
-}
-
-input:focus, textarea:focus {
-  border: 1px solid #6bd4b1;
-}
-
-textarea {
-  resize: none;
-}
-
-button {
-  display: block;
-  float: right;
-  line-height: 24pt;
-  padding: 0 20px;
-  border: none;
-  background: #f45702;
-  color: white;
-  letter-spacing: 2px;
-  transition: 0.2s all ease-in-out;
-  border-bottom: 2px solid transparent;
-  outline: none;
-}
-button:hover {
-  background: inherit;
-  color: #f45702;
-  border-bottom: 2px solid #f45702;
-}
-
-::selection {
-  background: #ffc7b8;
-}
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus {
-  border: 1px solid #6bd4b1;
-  -webkit-text-fill-color: #2A293E;
-  -webkit-box-shadow: 0 0 0px 1000px #f8f4e5 inset;
-  transition: background-color 5000s ease-in-out 0s;
-}
-        </style>
     </head>
     <body>
-        <div class="contact-us">
-            <form method="POST" action="/index" >
-              <label for="txt_ig_linker">妹不就好棒棒發文工具 <em>&#x2a;</em></label><textarea id="txt_ig_linker" name="txt_ig_linker" required="" rows="4"></textarea>
-              <h3>
-                  貼上IG連結按下送出即可，支援發圖片和影片(每篇文間隔 <span style="color:blue;">{{ POST_DELAY }}</span>秒發送 ) 
-              </h3>
-              <h3>
-                目前還有<span id="labWaitMessageCount" style="color:blue;"></span>篇文等待發送
-              </h3>
-              <br/>
-              <button >送出</button>
-            </form>
-          </div>
+      <!--[if lt IE 9]>
+            <div class="bg-danger text-center">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/" class="highlight">upgrade your browser</a> to improve your experience.</div>
+        <![endif]-->
+
+      <!-- wrappers for visual page editor and boxed version of template -->
+      <div id="canvas">
+        <div id="box_wrapper">
+    
+          <!-- template sections -->
+      
+          <section class="ds section_padding_0 columns_padding_5">
+            <div class="container">
+
+                  <div class="comment-respond" id="respond">
+                    <h3 class="big">妹不就好棒棒發文工具</h3>
+    
+                    <form class="comment-form" id="commentform" method="post" action="/">
+
+                        <div class="col-md-12">
+                          <p class="comment-form-chat">
+                            <label for="comment" class="sr-only">Message</label>
+                            <!-- <i class="rt-icon2-pencil3"></i> -->
+                            <textarea aria-required="true" rows="4" cols="45" name="txtMessage" id="txtMessage"
+                              class="form-control with-icon" placeholder="FB發文文字">{{ Message }} </textarea>
+                            <i class="rt-icon2-pen"></i>
+                          </p>
+                        </div>
+
+                        <div class="col-md-12">
+                          <p class="comment-form-chat">
+                            <label for="comment" class="sr-only">IG Linker</label>
+                            <!-- <i class="rt-icon2-pencil3"></i> -->
+                            <textarea aria-required="true" rows="4" cols="45" name="txtIgLinker" id="txtIgLinker"
+                              class="form-control with-icon" placeholder="IG Linker"></textarea>
+                            <i class="rt-icon2-camera6"></i>
+                          </p>
+                        </div>
+                      </div>
+                      <p class="form-submit">
+                        <button type="button" id="submit" name="submit" class="theme_button wide_button color1">儲存</button>
+                        <button type="reset" id="reset" class="theme_button inverse">重新輸入</button>
+                      </p>
+                      
+                      <p class="text-submit">每篇文發送間隔
+                        <strong class="grey">{{POST_DELAY}}</strong> 秒
+                      </p>
+                    </form>
+
+                    <div class="alert alert-danger" role="alert" id="alertMessage">
+                      <!--
+                      <button type="button" class="close" data-dismiss="alert">
+                        <span aria-hidden="true">×</span>
+                        <span class="sr-only">Close</span>
+                      </button>
+                      -->
+                      <strong>錯誤!</strong> 
+                      <span></span>
+                    </div>
+                  </div>
+                  <!-- #respond -->
+  
+            </div>
+          </section>
+          
+          <section class="ds section_padding_top_30 section_padding_bottom_60">
+            <div class="container">
+              <div class="row">
+                <div class="col-sm-12 to_animate" data-animation="scaleAppear">
+          
+                  <!-- Nav tabs -->
+                  <ul class="nav nav-tabs" role="tablist">
+                    <li class="active">
+                      <a href="#tab1" role="tab" data-toggle="tab">等待發送</a>
+                    </li>
+                    <!--<li>
+                      <a href="#tab2" role="tab" data-toggle="tab">發送完成</a>
+                    </li>-->
+                  </ul>
+          
+                  <!-- Tab panes -->
+                  <div class="tab-content no-border top-color-border">
+                    <div class="tab-pane fade in active" id="tab1">
+          
+                      <div class="table-responsive">
+                        <table id="table1" class="table_template">
+                          <thead class="light">
+                            <tr>
+                              <th>shortcode</th>
+                              <th>狀態</th>
+                              <th>建立時間</th>
+                              <th></th>
+                          
+                            </tr>
+                          </thead>
+                          <tbody class="grey">
+                            <tr>
+                              <td>CR8iF12nYBU	</td>
+                              <td>待發送</td>
+                              <td>Sat, 31 Jul 2021 01:54:13 GMT</td>
+                              <td><a class="theme_button" href="#">刪除</a></td>
+                            </tr>
+                            <tr>
+                              <td>CR83_8_BgpC	</td>
+                              <td>粉專已送</td>
+                              <td>Sat, 31 Jul 2021 01:54:13 GMT</td>
+                              <td><a class="theme_button" href="#">刪除</a></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+          
+                    </div>
+                    <!-- .tab-pane -->
+          
+                    <!--
+                    <div class="tab-pane fade" id="tab2">
+          
+          
+                      <div class="table-responsive">
+                        <table id="table2" class="table_template">
+                          <thead class="light">
+                            <tr>
+                              <th>shortcode</th>
+                              <th>狀態</th>
+                              <th>建立時間</th>
+                          
+                            </tr>
+                          </thead>
+                          <tbody class="grey">
+                            <tr>
+                              <td>CR8iF12nYBU	</td>
+                              <td>待發送</td>
+                              <td>Sat, 31 Jul 2021 01:54:13 GMT</td>
+                            </tr>
+                            <tr>
+                              <td>CR83_8_BgpC	</td>
+                              <td>粉專已送</td>
+                              <td>Sat, 31 Jul 2021 01:54:13 GMT</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+          
+          
+                    </div>
+                    <! -- .tab-pane  - ->
+                    -->
+                  </div>
+          
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <!-- eof #box_wrapper -->
+      </div>
+      <!-- eof #canvas -->
     </body>
+    <script src="{{ url_for('static', filename='external/jquery/jquery.js') }} "></script>
+    <script src="{{ url_for('static', filename='scripts/jquery-ui.min.js') }} "></script>
+    <script src="{{ url_for('static', filename='scripts/main.js') }} "></script>
+    <script src="{{ url_for('static', filename='scripts/compressed.js') }} "></script>
+    <script src="{{ url_for('static', filename='scripts/jquery.blockUI.js') }} "></script>
+
     <script type="text/javascript">
       var timer;
-      $(document).ready(function(){
-        timer = window.setInterval(function(){
-          $.get( "/GetWaitMessageCount", function( count ) {
-            $("#labWaitMessageCount").text(count );
-            console.log(data)
-          });
-        }, 2000);
-        
-        $(":button").click(function(){
-          if($("#txt_ig_linker").val() != "")
-          {
-            $.blockUI();
+      
+      function delete_post(shortcode){
+        if(confirm(`確定要刪除${shortcode}嗎?`))
+        {
+          $.blockUI();
+          $('.alert').hide();
+          $.post("/delete_post", { "shortcode": shortcode }, function(result){
+            
+            $.unblockUI(); 
+            if (!result["isSuccess"]){
+              $('.alert > span').text(result["message"]);
+              $('.alert').show();
+            }
+            else
+            {
+              get_posts();
+            }
+          }, "json");
+        }
+      }
+
+      function get_posts(){
+        $.getJSON( "/get_posts", function( result ) {
+          if (result["isSuccess"]){
+            $("#table1 > tbody").empty();
+
+            var totals =  result["totals"];
+            $("a[href=#tab1]").text(`等待發送(${totals})`);
+            
+            for(var i=0; i <= result["data"].length -1; i++)
+            {
+              var row = result["data"][i];
+              var shortcode = row[0];
+              var ig_linker = row[2];
+              var createTime = row[4]; //Sat, 31 Jul 2021 01:54:13 GMT
+              
+              switch(row[3])
+              {
+                case 0:
+                  status = "待發送";
+                  break;
+                case 1:
+                  status = "發送照片到粉專";
+                  break;
+                case 2:
+                  status = "發送影片到粉專";
+                  break;
+                case 3:
+                  status = "分享照片到社團";
+                  break;
+                case 4:
+                  status = "分享影片到社團";
+                  break;
+              }
+              
+              html = `<tr>`;
+              html += `<td> <a href='${ig_linker}'  target='_blank'>${shortcode}</a></td>`;
+              html += `<td>${status}</td>`;
+              html += `<td>${createTime}</td>`;
+              html += `<td><a class='theme_button' href='#' onclick="delete_post('${shortcode}');">刪除</a></td>`;
+              html += `</tr>`;
+              $("#table1 > tbody").append(html);
+            }
           }
-        });        
+        });
+      }
+      
+      function add_post()
+      {
+        var psot_data = {
+          "igLinker" : $("#txtIgLinker").val(),
+           "message" : $("#txtMessage").val(),
+        };
+          
+        $.post( "/add_post", psot_data, function( result ) {
+          $.unblockUI(); 
+          if (!result["isSuccess"]){
+            $('.alert > span').text(result["message"]);
+            $('.alert').show();
+          }
+          else
+          {
+            $("#txtIgLinker").val("");
+            get_posts();
+          }
+        }, "json");
+      }
+
+      $(document).ready(function(){
+
+        get_posts();
+        
+        timer = window.setInterval(get_posts, 5000);
+
+        $('.alert').hide();
+
+        $("#submit").click(function(){
+          $.blockUI();
+          $('.alert').hide();
+          
+          add_post();
+        });
       });
 
-      
     </script>
 </html>
 <!-- https://codepen.io/rickyeckhardt/pen/zYGwaKr -->

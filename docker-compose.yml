@@ -1,16 +1,5 @@
 version: "3.9"
 services:
-    rabbitmq:
-        image: rabbitmq:3.8.17-management-alpine
-        container_name: mq
-        hostname: rabbitmq.local
-        ports:
-            - 5672:5672
-            - 15672:15672
-        env_file:
-            prd.env
-        security_opt:
-            - seccomp:unconfined # 不加入此參數raspberry pi會出錯
     web:
         build:
             context: ./web
@@ -33,7 +22,9 @@ services:
             - /var/log/sexsexder:/usr/app/logs
             - /usr/data/sexsexder/downloads:/usr/app/downloads
             - ./session:/usr/app/session
+            - /usr/data/sexsexder/data:/usr/app/data
         env_file:
             - prd.env
         depends_on:
             - rabbitmq
+    mysql:

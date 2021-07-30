@@ -1,69 +1,222 @@
 from flask import Flask, make_response, render_template, request
+from flask import url_for, redirect, flash, jsonify
 import logging
 import os, sys
+
+from flask.helpers import total_seconds
 import pika
 import time
 from dotenv import load_dotenv
-import requests
 from requests.auth import HTTPBasicAuth
-import json
+import re
+import datetime
+import sqlite3
+  
 
 app = Flask(__name__)
 
+
+def response_json(obj):
+    #response = make_response( jsonify(obj), 200)
+    #response.mimetype = 'application/json'
+    #return response
+    return jsonify(obj)
+
+def findShortcode(url):
+    regex = re.compile(r'^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com.*\/p\/)([\d\w\-_]+)(?:\/)?(\?.*)?$')
+    match = regex.search(url)
+    shortcode = match.group(1)
+    return shortcode
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    #if request.method == 'GET':
+    #    return render_template("login.html")
+    
+    # request.form['user_id'
+    return render_template('login.html')
+
 @app.route('/')
-@app.route('/index', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET'])
 def index():
-    if request.method == 'POST':
-        if request.form.get('txt_ig_linker'): 
-            post_linker = request.form.get('txt_ig_linker')
+    message = f"防疫期間大家在家裡看妹就好\n我們有最強大的\"工人智慧\"每天篩選發文\n如果覺得不錯再幫忙推薦給朋友壯大社群"
+    return render_template('index.html', POST_DELAY=post_delay, Message=message)
 
-            credentials = pika.PlainCredentials(mq_user, mq_pass)
-            parameters = pika.ConnectionParameters(host=mq_host, port=mq_port, credentials=credentials, heartbeat=20*60) 
-            connection = pika.BlockingConnection(parameters)
-            logging.debug("connect to rabbitMQ...")
-            channel = connection.channel()
 
-            logging.debug("publish message to rabbitMQ...")
-            channel.basic_publish(exchange='', routing_key=mq_name, body=post_linker)
+@app.route('/delete_post', methods=['POST'])
+def delete_post():
+    connection = None
+    cursor = None
+    try:
+        if not request.values.get('shortcode'):
+            raise Exception("必須提供shortcode")
+        
+        shortcode = request.form.get('shortcode')
+        logging.info(f"delete post shortcode : {shortcode}")
 
-            logging.debug("close connect to rabbitMQ...")
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
+
+        # insert the data into table
+        delete_sql = "DELETE FROM [ig_post]  WHERE shortcode=?"
+        delete_data = (shortcode, )
+        cursor.execute(delete_sql, delete_data)
+
+        # close the cursor and database connection 
+        connection.commit()
+        
+        result = {
+            "isSuccess": True,
+            "message" : None,
+            "data" : None
+        }
+    except Exception as e:
+        logging.error("call delete_post failed", exc_info=e)
+        result = {
+            "isSuccess": False,
+            "message" : str(e),
+            "data" : None
+        }
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close()
 
-    return render_template('index.html', POST_DELAY=post_delay)
+    return response_json(result)
 
-@app.route('/GetWaitMessageCount', methods=['GET'])
-def getWaitMessageCount():    
-    mq_api_url = f'http://{mq_host}:{mq_web_host}/api/queues/'
-    logging.debug(f"URL: {mq_api_url}")
-    response = requests.get(mq_api_url, auth=HTTPBasicAuth(mq_user, mq_pass))
+def check_shortcode_exist(shortcode):
+    connection = None
+    cursor = None
+    try:
 
-    count = "-1"
-    if response.status_code == 200:
-        logging.debug(response.text)
-        jsonObj = json.loads(response.text)
-        count = str(jsonObj[0]["messages"])
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
 
-    response = make_response(count, 200)
-    response.mimetype = "text/plain"
-    return response
+        # insert the data into table
+        query_sql = "SELECT COUNT(*) FROM [ig_post] WHERE shortcode=?"
+        query_data = (shortcode, )
+        cursor.execute(query_sql, query_data)
+
+        fetchedData = cursor.fetchone()
+
+        return int(fetchedData[0]) >=1
+    except Exception as e:
+        logging.error("call check_shortcode_exist failed", exc_info=e)
+        raise Exception("check_shortcode_exist error", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+@app.route('/get_posts', methods=['GET'])
+def get_posts():
+    connection = None
+    cursor = None
+    try:
+
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
+
+        # insert the data into table
+        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY CreateTime ASC"
+        query_data = { "status": 5 } 
+        cursor.execute(query_sql, query_data)
+        fetchedData = cursor.fetchall()
+        
+        query_sql = "SELECT COUNT(*) FROM [ig_post] WHERE status <:status"
+        query_data = { "status": 5 } 
+        cursor.execute(query_sql, query_data)
+        totals = cursor.fetchone()[0]
+
+        result = {
+            "isSuccess": True,
+            "message" : None,
+            "data" : fetchedData,
+            "totals" : totals
+        }
+    except Exception as e:
+        logging.error("call get_posts failed", exc_info=e)
+        result = {
+            "isSuccess": False,
+            "message" : str(e),
+            "data" : None
+        }
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+    return response_json(result)
+
+@app.route('/add_post', methods=['POST'])
+def add_post():
+
+    connection = None
+    cursor = None
+    try:
+        if not request.values.get('igLinker'):
+            raise Exception("必須提供IG連結")
+        
+        igLinker = request.form.get('igLinker')
+        message = request.form.get('message')
+        shortcode = findShortcode(igLinker)
+        print(f"igLinker={igLinker}, message={message}, shortcode={shortcode}")
+        if not shortcode:
+            raise Exception("提供IG連結找不到shortcode")
+
+        logging.info(f"shortcode : {shortcode}")
+
+        if check_shortcode_exist(shortcode):
+            raise Exception(f"{shortcode} 已經排入發送")
+
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
+
+        # insert the data into table
+        insert_sql = "INSERT INTO [ig_post] (shortcode, message, ig_linker, status, CreateTime, PostTime) VALUES ( ?, ?, ?, ?, ?, ?)"
+        insert_data = (shortcode, message, igLinker, 0, datetime.datetime.now(), datetime.datetime.now())
+        cursor.execute(insert_sql, insert_data)
+
+        # close the cursor and database connection 
+        connection.commit()
+        
+        result = {
+            "isSuccess": True,
+            "message" : None,
+            "data" : None
+        }
+    except Exception as e:
+        result = {
+            "isSuccess": False,
+            "message" : str(e),
+            "data" : None
+        }
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+    return response_json(result)
 
 if __name__ == "__main__":
-    global connection
     global post_delay
-    global mq_host
-    global mq_web_host
-    global mq_user
-    global mq_pass
-    global mq_name
+    global sqlite_path
 
     load_dotenv() 
     
-    mq_host = os.getenv("MQ_HOST")
-    mq_port = int(os.getenv("MQ_PORT"))
-    mq_web_host = int(os.getenv("MQ_WEB_PORT"))
-    mq_name = os.getenv("MQ_NAME")
-    mq_user = os.getenv("RABBITMQ_DEFAULT_USER")
-    mq_pass = os.getenv("RABBITMQ_DEFAULT_PASS")
+    sqlite_path = os.getenv("SQLITE_PATH")
     post_delay = int(os.getenv("POST_DELAY"))
     id_username= os.getenv('IG_USERNAME')
     ig_session_file = os.getenv('IG_SESSION_FILE')
@@ -75,12 +228,7 @@ if __name__ == "__main__":
     log_level = os.getenv('LOG_LEVEL')
 
     env_text = "Load environment variables:\n"
-    env_text += f"\tMQ_HOST={mq_host}\n"
-    env_text += f"\tMQ_PORT={mq_port}\n"
-    env_text += f"\tMQ_WEB_PORT={mq_web_host}\n"
-    env_text += f"\tMQ_NAME={mq_name}\n"
-    env_text += f"\tMQ_USER={mq_user}\n"
-    env_text += f"\tMQ_PASS={mq_pass}\n"
+    env_text += f"SQLITE_PATH={sqlite_path}\n"
     env_text += f"\tPOST_DELAY={post_delay}\n"
     env_text += f"\tIG_USERNAME={id_username}\n "
     env_text += f"\tIG_SESSION_FILE={ig_session_file}\n"
