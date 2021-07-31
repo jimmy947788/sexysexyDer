@@ -17,13 +17,8 @@ import urllib.parse
 import sqlite3
 import datetime
 
-def ig_downloader(url):
+def ig_downloader(shortcode):
     try:
-        regex = re.compile(r'^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com.*\/p\/)([\d\w\-_]+)(?:\/)?(\?.*)?$')
-        match = regex.search(url)
-        shortcode = match.group(1)
-        logging.debug(f"shortcode : {shortcode}")
-
         post = instaloader.Post.from_shortcode(ig_loader.context, shortcode)
 
         logging.debug(f"post {shortcode} downlaoding...")
@@ -434,7 +429,7 @@ if __name__ == '__main__':
             (shortcode, message, ig_linker, status, create_time, post_time) = post_dequeue()
             if shortcode:
                 logging.info(f"[step.1] Download IG post from  {ig_linker}")
-                (ig_owner, shortcode, shortcode_folder) = ig_downloader(ig_linker)
+                (ig_owner, shortcode, shortcode_folder) = ig_downloader(shortcode)
 
 
                 status= get_ig_post_status(shortcode)

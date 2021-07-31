@@ -7,7 +7,7 @@ from requests.auth import HTTPBasicAuth
 import re
 import datetime
 import sqlite3
-  
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
@@ -19,10 +19,19 @@ def response_json(obj):
     return jsonify(obj)
 
 def findShortcode(url):
+    """
     regex = re.compile(r'^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com.*\/p\/)([\d\w\-_]+)(?:\/)?(\?.*)?$')
     match = regex.search(url)
     shortcode = match.group(1)
     return shortcode
+    """
+    u = urlparse(url)
+    #print(u)
+    #print(f"path : {u.path}")
+    # path =/reel/CR_QcmBBlQ2/
+    # path =/p/CR_QcmBBlQ2/
+    return u.path.split('/')[-2:-1][0]
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
