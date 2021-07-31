@@ -2,10 +2,6 @@ from flask import Flask, make_response, render_template, request
 from flask import url_for, redirect, flash, jsonify
 import logging
 import os, sys
-
-from flask.helpers import total_seconds
-import pika
-import time
 from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
 import re
@@ -126,13 +122,13 @@ def get_posts():
         cursor = connection.cursor()
 
         # insert the data into table
-        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY CreateTime ASC"
-        query_data = { "status": 5 } 
+        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY create_time ASC"
+        query_data = { "status": 3 } # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
         cursor.execute(query_sql, query_data)
         fetchedData = cursor.fetchall()
         
         query_sql = "SELECT COUNT(*) FROM [ig_post] WHERE status <:status"
-        query_data = { "status": 5 } 
+        query_data = { "status": 3 } # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
         cursor.execute(query_sql, query_data)
         totals = cursor.fetchone()[0]
 
@@ -184,7 +180,7 @@ def add_post():
         cursor = connection.cursor()
 
         # insert the data into table
-        insert_sql = "INSERT INTO [ig_post] (shortcode, message, ig_linker, status, CreateTime, PostTime) VALUES ( ?, ?, ?, ?, ?, ?)"
+        insert_sql = "INSERT INTO [ig_post] (shortcode, message, ig_linker, status, create_time, post_time) VALUES ( ?, ?, ?, ?, ?, ?)"
         insert_data = (shortcode, message, igLinker, 0, datetime.datetime.now(), datetime.datetime.now())
         cursor.execute(insert_sql, insert_data)
 
