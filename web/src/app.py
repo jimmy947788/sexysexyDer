@@ -11,20 +11,7 @@ from urllib.parse import urlparse
 
 app = Flask(__name__)
 
-
-def response_json(obj):
-    #response = make_response( jsonify(obj), 200)
-    #response.mimetype = 'application/json'
-    #return response
-    return jsonify(obj)
-
 def findShortcode(url):
-    """
-    regex = re.compile(r'^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com.*\/p\/)([\d\w\-_]+)(?:\/)?(\?.*)?$')
-    match = regex.search(url)
-    shortcode = match.group(1)
-    return shortcode
-    """
     u = urlparse(url)
     #print(u)
     #print(f"path : {u.path}")
@@ -90,7 +77,7 @@ def delete_post():
         if connection:
             connection.close()
 
-    return response_json(result)
+    return jsonify(result)
 
 def check_shortcode_exist(shortcode):
     connection = None
@@ -160,7 +147,7 @@ def get_posts():
         if connection:
             connection.close()
 
-    return response_json(result)
+    return jsonify(result)
 
 @app.route('/add_post', methods=['POST'])
 def add_post():
@@ -213,7 +200,7 @@ def add_post():
         if connection:
             connection.close()
 
-    return response_json(result)
+    return jsonify(result)
 
 if __name__ == "__main__":
     global post_delay
