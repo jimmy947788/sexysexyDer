@@ -17,13 +17,8 @@ import urllib.parse
 import sqlite3
 import datetime
 
-def ig_downloader(url):
+def ig_downloader(shortcode):
     try:
-        regex = re.compile(r'^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com.*\/p\/)([\d\w\-_]+)(?:\/)?(\?.*)?$')
-        match = regex.search(url)
-        shortcode = match.group(1)
-        logging.debug(f"shortcode : {shortcode}")
-
         post = instaloader.Post.from_shortcode(ig_loader.context, shortcode)
 
         logging.debug(f"post {shortcode} downlaoding...")
@@ -202,8 +197,8 @@ def post_dequeue():
         cursor = connection.cursor()
 
         # insert the data into table
-        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY CreateTime ASC limit 1"
-        query_data = { "status": -1 } 
+        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY create_time ASC limit 1"
+        query_data = { "status": 3 } # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
         cursor.execute(query_sql, query_data)
 
         fetchedData = cursor.fetchone()
@@ -213,14 +208,38 @@ def post_dequeue():
             message = fetchedData[1]
             ig_linker = fetchedData[2]
             status = fetchedData[3]
-            createTime = fetchedData[4]
-            postTime = fetchedData[5]
-            return (shortcode, message, ig_linker, status, createTime, postTime)
+            create_time = fetchedData[4]
+            post_time = fetchedData[5]
+            return (shortcode, message, ig_linker, status, create_time, post_time)
         else:
             return (None, None, None, None, None, None)
 
     except Exception as e:
-        logging.error("consuming error", e)
+        logging.error("post_dequeue", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def get_ig_post_status(shortcode):
+    connection = None
+    cursor = None
+    try:
+
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
+
+        # insert the data into table
+        query_sql = "SELECT status FROM [ig_post] WHERE shortcode=:shortcode"
+        query_data = { "shortcode": shortcode }
+        cursor.execute(query_sql, query_data)
+        return cursor.fetchone()[0]
+
+    except Exception as e:
+        logging.error("get_ig_post_status", e)
     finally:
         if cursor:
             cursor.close()
@@ -237,7 +256,7 @@ def update_status(shortcode, status):
         cursor = connection.cursor()
 
         # insert the data into table
-        update_sql = "UPDATE [ig_post]  SET status = ?, PostTime=?  WHERE shortcode=?"
+        update_sql = "UPDATE [ig_post]  SET status = ?, post_time=?  WHERE shortcode=?"
         update_data = (status,  datetime.datetime.now(), shortcode)
         cursor.execute(update_sql, update_data)
 
@@ -245,7 +264,109 @@ def update_status(shortcode, status):
         connection.commit()
         
     except Exception as e:
-        logging.error("consuming error", e)
+        logging.error("update_status error", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def insert_fb_url(shortcode:str, post_type:int, post_url:str):
+    """紀錄發文狀況
+
+    Args:
+        shortcode (str): IG文編號
+        post_type (int): 1:照片, 2:影片
+        post_url (str):  發後網址
+    """
+    connection = None
+    cursor = None
+    try:
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
+
+        # insert the data into table
+        insert_sql = "INSERT INTO [fb_post] (shortcode, post_type, post_url, isShared) VALUES (?, ?, ?, ?)"
+        insert_data = (shortcode, post_type, post_url, False)
+        cursor.execute(insert_sql, insert_data)
+
+        # close the cursor and database connection 
+        connection.commit()
+        
+    except Exception as e:
+        logging.error("insert_fb_url error", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def update_fb_post_shared(shortcode:str, post_type:int, post_url:str, isShared:bool = True):
+    """更新分享社團欄位
+
+    Args:
+        shortcode (str): IG文編號
+        post_type (int): 1:照片, 2:影片
+        isShared (bool, optional): 是否分享到社團
+    """
+    connection = None
+    cursor = None
+    try:
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
+
+        # insert the data into table
+        update_sql = "UPDATE [fb_post] SET isShared=? WHERE shortcode=? and post_type=? and post_url=?"
+        update_data = (isShared, shortcode, post_type, post_url)
+        cursor.execute(update_sql, update_data)
+
+        # close the cursor and database connection 
+        connection.commit()
+        
+    except Exception as e:
+        logging.error("update_fb_post_shared error", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def find_fb_posts(shortcode:str, post_type:int):
+    """取得FB發文狀態
+
+    Args:
+        shortcode (str): IG文編號
+        post_type (int): 1:照片, 2:影片
+
+    Returns:
+        List: list(shortcode, post_type, post_url, isShared)
+    """
+    connection = None
+    cursor = None
+    try:
+
+        # make the database connection with detect_types 
+        connection = sqlite3.connect(sqlite_path,
+            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
+        cursor = connection.cursor()
+
+        # insert the data into table
+        query_sql = "SELECT * FROM [fb_post] WHERE shortcode=:shortcode and post_type=:post_type"
+        query_data = { 
+            "shortcode": shortcode,  
+            "post_type": post_type
+        }
+        cursor.execute(query_sql, query_data)
+
+        fetchedData = cursor.fetchall()
+        return fetchedData
+
+    except Exception as e:
+        logging.error("post_dequeue", e)
     finally:
         if cursor:
             cursor.close()
@@ -305,32 +426,51 @@ if __name__ == '__main__':
 
     while True:
         try:
-            (shortcode, message, ig_linker, status, createTime, postTime)  = post_dequeue()
+            (shortcode, message, ig_linker, status, create_time, post_time) = post_dequeue()
             if shortcode:
                 logging.info(f"[step.1] Download IG post from  {ig_linker}")
-                (ig_owner, shortcode, shortcode_folder) = ig_downloader(ig_linker)
+                (ig_owner, shortcode, shortcode_folder) = ig_downloader(shortcode)
 
-                logging.info(f"[step.2] Post {shortcode} pictures to FB page")
-                post_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker, message)
-                update_status(shortcode, 1)
 
-                logging.info(f"[step.3] Post {shortcode} video to FB page")
-                post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker, message)
-                update_status(shortcode, 2)
+                status= get_ig_post_status(shortcode)
+                # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
+                if status == 0:
+                    logging.info(f"[step.2] Post {shortcode} to FB page")
+                    
+                    fb_photo_post = find_fb_posts(shortcode, 1)
+                    if len(fb_photo_post) ==0:
+                        post_photo_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker, message)
+                        insert_fb_url(shortcode,1, post_photo_url)
 
-                if post_url:
-                    logging.debug(f"post_url: {post_url}")
-                    logging.info(f"[step.4] share {shortcode} photos to FB Group after {post_delay}s")
-                    fb_share_post2group(post_url)
-                    update_status(shortcode, 3)
+                    fb_video_post = find_fb_posts(shortcode, 2)
+                    if len(fb_video_post) ==0:
+                        post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker, message)
+                        for post_url in post_video_urls:
+                            insert_fb_url(shortcode,2, post_url)
 
-                for post_url in post_video_urls:
-                    logging.debug(f"post_url: {post_url}")
-                    logging.info(f"[step.5]  share {shortcode} video to FB Group after {post_delay}s")
-                    fb_share_post2group(post_url)
-                    update_status(shortcode, 4)
+                    update_status(shortcode, 1)
 
-                update_status(shortcode, 5)
+                status= get_ig_post_status(shortcode)
+                if status == 1:
+                    logging.info(f"[step.3] share {shortcode} to FB Group ")
+
+                    fb_photo_post = find_fb_posts(shortcode, 1)
+                    if len(fb_photo_post) > 0:
+                        isShared = fb_photo_post[0][3]
+                        post_photo_url = fb_photo_post[0][2]
+                        if not isShared:
+                            fb_share_post2group(post_photo_url)
+                            update_fb_post_shared(shortcode, 1, post_photo_url)
+
+                    fb_video_post = find_fb_posts(shortcode, 2)
+                    for (_, _, post_url, isShared) in fb_video_post:
+                        if not isShared:
+                            fb_share_post2group(post_url)
+                            update_fb_post_shared(shortcode, 2, post_url)
+                        
+                    update_status(shortcode, 2)
+
+                update_status(shortcode, 3)
                 logging.info(f" **** sleep {post_delay}s fot next post **** ")
                 time.sleep(post_delay)
             else:

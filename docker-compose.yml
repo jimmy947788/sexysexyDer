@@ -7,12 +7,11 @@ services:
         restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
+            - /usr/data/sexsexder/data:/usr/app/data
         ports :
             - 5000:5000
         env_file:
             - prd.env
-        depends_on:
-            - rabbitmq
     worker:
         build:
             context: ./worker
@@ -25,6 +24,3 @@ services:
             - /usr/data/sexsexder/data:/usr/app/data
         env_file:
             - prd.env
-        depends_on:
-            - rabbitmq
-    mysql:

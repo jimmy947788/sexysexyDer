@@ -2,31 +2,23 @@ from flask import Flask, make_response, render_template, request
 from flask import url_for, redirect, flash, jsonify
 import logging
 import os, sys
-
-from flask.helpers import total_seconds
-import pika
-import time
 from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
 import re
 import datetime
 import sqlite3
-  
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
-
-def response_json(obj):
-    #response = make_response( jsonify(obj), 200)
-    #response.mimetype = 'application/json'
-    #return response
-    return jsonify(obj)
-
 def findShortcode(url):
-    regex = re.compile(r'^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com.*\/p\/)([\d\w\-_]+)(?:\/)?(\?.*)?$')
-    match = regex.search(url)
-    shortcode = match.group(1)
-    return shortcode
+    u = urlparse(url)
+    #print(u)
+    #print(f"path : {u.path}")
+    # path =/reel/CR_QcmBBlQ2/
+    # path =/p/CR_QcmBBlQ2/
+    return u.path.split('/')[-2:-1][0]
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -85,7 +77,7 @@ def delete_post():
         if connection:
             connection.close()
 
-    return response_json(result)
+    return jsonify(result)
 
 def check_shortcode_exist(shortcode):
     connection = None
@@ -126,13 +118,13 @@ def get_posts():
         cursor = connection.cursor()
 
         # insert the data into table
-        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY CreateTime ASC"
-        query_data = { "status": 5 } 
+        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY create_time ASC"
+        query_data = { "status": 3 } # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
         cursor.execute(query_sql, query_data)
         fetchedData = cursor.fetchall()
         
         query_sql = "SELECT COUNT(*) FROM [ig_post] WHERE status <:status"
-        query_data = { "status": 5 } 
+        query_data = { "status": 3 } # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
         cursor.execute(query_sql, query_data)
         totals = cursor.fetchone()[0]
 
@@ -155,7 +147,7 @@ def get_posts():
         if connection:
             connection.close()
 
-    return response_json(result)
+    return jsonify(result)
 
 @app.route('/add_post', methods=['POST'])
 def add_post():
@@ -184,7 +176,7 @@ def add_post():
         cursor = connection.cursor()
 
         # insert the data into table
-        insert_sql = "INSERT INTO [ig_post] (shortcode, message, ig_linker, status, CreateTime, PostTime) VALUES ( ?, ?, ?, ?, ?, ?)"
+        insert_sql = "INSERT INTO [ig_post] (shortcode, message, ig_linker, status, create_time, post_time) VALUES ( ?, ?, ?, ?, ?, ?)"
         insert_data = (shortcode, message, igLinker, 0, datetime.datetime.now(), datetime.datetime.now())
         cursor.execute(insert_sql, insert_data)
 
@@ -208,7 +200,7 @@ def add_post():
         if connection:
             connection.close()
 
-    return response_json(result)
+    return jsonify(result)
 
 if __name__ == "__main__":
     global post_delay
