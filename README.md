@@ -1,6 +1,7 @@
 # sexysexyDer 
-> 妹不就好棒棒抓IG文發FB工具
-
+妹不就好棒棒抓IG文發FB工具
+- 妹不就好棒棒[粉專](https://www.facebook.com/sexysexyDer)
+- 妹不就好棒棒[社團](https://www.facebook.com/groups/sexysexyder)
 
 ## 初始化專案
 ### 安裝套件
