@@ -1,6 +1,6 @@
 import instaloader 
 import os
-
+from instaloader import Profile
 # Get instance
 L = instaloader.Instaloader()
 
@@ -17,6 +17,12 @@ username="jimmy947788"
 L.load_session_from_file(username, "C:\\Users\\Jimmy Wu\\AppData\\Local\\Instaloader\\session-jimmy947788") # (load session created w/
                                     #  `instaloader -l USERNAME`)
 
+profile = Profile.from_username(L.context, username)
+
+for f in profile.get_followers():
+    print(f"https://www.instagram.com/{f.username}/?hl=zh-tw")
+
+"""
 shortcode = "CPX1nrTNfxn" #https://www.instagram.com/p/COCOx3UnJIG/
 post = instaloader.Post.from_shortcode(L.context, shortcode)
 
@@ -27,3 +33,4 @@ if not os.path.exists(save_path):
     os.makedirs(save_path)
 
 L.download_post(post, target=save_path)
+"""
