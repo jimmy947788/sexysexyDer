@@ -480,7 +480,7 @@ if __name__ == '__main__':
             logging.error(str(e), exc_info=e)
             logging.info(f"have some error, wait 10 seconds ")
         finally:
-            logging.info(f" **** sleep {post_delay}s fot next post **** ")
+            logging.info(f" **** sleep {post_delay}s for next post **** ")
             time.sleep(post_delay)
         
         
