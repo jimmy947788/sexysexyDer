@@ -1,15 +1,20 @@
 # sexysexyDer 
-> 妹不就好棒棒IG抓突發文工具
+> 妹不就好棒棒抓IG文發FB工具
 
 
 ## 初始化專案
 ### 安裝套件
-```bash
-pip3 install -r requirements.txt
-```
+- worker
+    ```bash
+    $> pip3 install -r worker/requirements.txt
+    ```
+- web
+    ```bash
+    $> pip3 install -r web/requirements.txt
+    ```
 ### IG登入授權
 ```bash
-instaloader --login={IG帳號} --sessionfile={IG session檔案路徑}
+$> instaloader --login={IG帳號} --sessionfile={IG session檔案路徑}
 ```
 > 不從程式登入因為我的帳號有設定簡訊2階段驗證，先用指令來登入保存session之後 程式只要load session 就好 。
 
@@ -26,9 +31,14 @@ instaloader --login={IG帳號} --sessionfile={IG session檔案路徑}
 
 ### 一般執行
 在`.env`所在的目錄執行即可
-```bash
-python3 src/app.py
-```
+- worker
+    ```bash
+    $> python3 worker/src/app.py
+    ```
+- web
+    ```bash
+    $> python3 web/src/app.py
+    ```
 
 ### docker 執行
 1. 啟動容器背景執行
