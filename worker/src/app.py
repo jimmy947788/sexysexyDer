@@ -426,60 +426,62 @@ if __name__ == '__main__':
 
     while True:
         try:
-            (shortcode, message, ig_linker, status, create_time, post_time) = post_dequeue()
-            if shortcode:
-                logging.info(f"[step.1] Download IG post from  {ig_linker}")
-                (ig_owner, shortcode, shortcode_folder) = ig_downloader(shortcode)
-
-
-                status= get_ig_post_status(shortcode)
-                # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
-                if status == 0:
-                    logging.info(f"[step.2] Post {shortcode} to FB page")
-                    
-                    fb_photo_post = find_fb_posts(shortcode, 1)
-                    if len(fb_photo_post) ==0:
-                        post_photo_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker, message)
-                        insert_fb_url(shortcode,1, post_photo_url)
-
-                    fb_video_post = find_fb_posts(shortcode, 2)
-                    if len(fb_video_post) ==0:
-                        post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker, message)
-                        for post_url in post_video_urls:
-                            insert_fb_url(shortcode,2, post_url)
-
-                    update_status(shortcode, 1)
-
-                status= get_ig_post_status(shortcode)
-                if status == 1:
-                    logging.info(f"[step.3] share {shortcode} to FB Group ")
-
-                    fb_photo_post = find_fb_posts(shortcode, 1)
-                    if len(fb_photo_post) > 0:
-                        isShared = fb_photo_post[0][3]
-                        post_photo_url = fb_photo_post[0][2]
-                        if not isShared:
-                            fb_share_post2group(post_photo_url)
-                            update_fb_post_shared(shortcode, 1, post_photo_url)
-
-                    fb_video_post = find_fb_posts(shortcode, 2)
-                    for (_, _, post_url, isShared) in fb_video_post:
-                        if not isShared:
-                            fb_share_post2group(post_url)
-                            update_fb_post_shared(shortcode, 2, post_url)
-                        
-                    update_status(shortcode, 2)
-
-                update_status(shortcode, 3)
-                logging.info(f" **** sleep {post_delay}s fot next post **** ")
-                time.sleep(post_delay)
+            now = datetime.datetime.now()
+            today8am = now.replace(hour=8, minute=0, second=0, microsecond=0)
+            today12pm = now.replace(hour=12, minute=0, second=0, microsecond=0)
+            if today8am and today12pm:
+                logging.info(f"not in work time range. (AM 8:00 ~ PM 12:00)")
             else:
-                logging.info(f"no post in queue, wait 10 seconds ")
-                time.sleep(10)
+                (shortcode, message, ig_linker, status, create_time, post_time) = post_dequeue()
+                if shortcode:
+                    logging.info(f"[step.1] Download IG post from  {ig_linker}")
+                    (ig_owner, shortcode, shortcode_folder) = ig_downloader(shortcode)
+
+                    status= get_ig_post_status(shortcode)
+                    # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
+                    if status == 0:
+                        logging.info(f"[step.2] Post {shortcode} to FB page")
+                        
+                        fb_photo_post = find_fb_posts(shortcode, 1)
+                        if len(fb_photo_post) ==0:
+                            post_photo_url = fb_post_photo2page(shortcode_folder, ig_owner, ig_linker, message)
+                            insert_fb_url(shortcode,1, post_photo_url)
+
+                        fb_video_post = find_fb_posts(shortcode, 2)
+                        if len(fb_video_post) ==0:
+                            post_video_urls = fb_post_video2page(shortcode_folder, ig_owner, ig_linker, message)
+                            for post_url in post_video_urls:
+                                insert_fb_url(shortcode,2, post_url)
+
+                        update_status(shortcode, 1)
+
+                    status= get_ig_post_status(shortcode)
+                    if status == 1:
+                        logging.info(f"[step.3] share {shortcode} to FB Group ")
+
+                        fb_photo_post = find_fb_posts(shortcode, 1)
+                        if len(fb_photo_post) > 0:
+                            isShared = fb_photo_post[0][3]
+                            post_photo_url = fb_photo_post[0][2]
+                            if not isShared:
+                                fb_share_post2group(post_photo_url)
+                                update_fb_post_shared(shortcode, 1, post_photo_url)
+
+                        fb_video_post = find_fb_posts(shortcode, 2)
+                        for (_, _, post_url, isShared) in fb_video_post:
+                            if not isShared:
+                                fb_share_post2group(post_url)
+                                update_fb_post_shared(shortcode, 2, post_url)
+                            
+                        update_status(shortcode, 2)
+
+                    update_status(shortcode, 3)
         except Exception as e:
             logging.error(str(e), exc_info=e)
             logging.info(f"have some error, wait 10 seconds ")
-            time.sleep(10)
+        finally:
+            logging.info(f" **** sleep {post_delay}s fot next post **** ")
+            time.sleep(post_delay)
         
         
             
