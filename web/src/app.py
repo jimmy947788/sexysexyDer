@@ -32,7 +32,7 @@ def login():
 @app.route('/index', methods=['GET'])
 def index():
     message = f"防疫期間大家在家裡看妹就好\n我們有最強大的\"工人智慧\"每天篩選發文\n如果覺得不錯再幫忙推薦給朋友壯大社群"
-    return render_template('index.html', POST_DELAY=post_delay, Message=message)
+    return render_template('index.html', POST_DELAY=post_delay, Message=message, SLEEP_HOUR_BEGING=sleep_hour_beging, SLEEP_HOUR_END=sleep_hour_end)
 
 
 @app.route('/delete_post', methods=['POST'])
@@ -205,6 +205,8 @@ def add_post():
 if __name__ == "__main__":
     global post_delay
     global sqlite_path
+    global sleep_hour_beging
+    global sleep_hour_end
 
     load_dotenv() 
     
@@ -218,6 +220,8 @@ if __name__ == "__main__":
     fb_access_token= os.getenv('FB_ACCESS_TOKEN')
     log_folder = os.getenv('LOG_FOLDER')
     log_level = os.getenv('LOG_LEVEL')
+    sleep_hour_beging = int(os.getenv('SLEEP_HOUR_BEGING')) #不發文開始小時(24小時制)
+    sleep_hour_end = int(os.getenv('SLEEP_HOUR_END')) #不發文結束小時(24小時制)
 
     env_text = "Load environment variables:\n"
     env_text += f"SQLITE_PATH={sqlite_path}\n"
@@ -230,6 +234,8 @@ if __name__ == "__main__":
     env_text += f"\tFB_ACCESS_TOKEN={fb_access_token}\n"
     env_text += f"\tLOG_FOLDER={log_folder}\n"
     env_text += f"\tLOG_LEVEL={log_level}\n"
+    env_text += f"\tSLEEP_HOUR_BEGING={sleep_hour_beging}\n"
+    env_text += f"\tSLEEP_HOUR_END={sleep_hour_end}\n"
 
     if not os.path.exists(log_folder):
         os.makedirs(log_folder)

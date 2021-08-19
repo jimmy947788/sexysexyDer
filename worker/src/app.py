@@ -394,7 +394,9 @@ if __name__ == '__main__':
     fb_access_token= os.getenv('FB_ACCESS_TOKEN')
     log_folder = os.getenv('LOG_FOLDER')
     log_level = os.getenv('LOG_LEVEL')
-
+    sleep_hour_beging = int(os.getenv('SLEEP_HOUR_BEGING')) #不發文開始小時(24小時制)
+    sleep_hour_end = int(os.getenv('SLEEP_HOUR_END')) #不發文結束小時(24小時制)
+    
     env_text = "Load environment variables:\n"
     env_text += f"SQLITE_PATH={sqlite_path}\n"
     env_text += f"\tPOST_DELAY={post_delay}\n"
@@ -406,6 +408,8 @@ if __name__ == '__main__':
     env_text += f"\tFB_ACCESS_TOKEN={fb_access_token}\n"
     env_text += f"\tLOG_FOLDER={log_folder}\n"
     env_text += f"\tLOG_LEVEL={log_level}\n"
+    env_text += f"\tSLEEP_HOUR_BEGING={sleep_hour_beging}\n"
+    env_text += f"\tSLEEP_HOUR_END={sleep_hour_end}\n"
 
     if not os.path.exists(log_folder):
         os.makedirs(log_folder)
@@ -426,11 +430,13 @@ if __name__ == '__main__':
 
     while True:
         try:
-            now = datetime.datetime.now()
-            today8am = now.replace(hour=8, minute=0, second=0, microsecond=0)
-            today12pm = now.replace(hour=12, minute=0, second=0, microsecond=0)
-            if today8am and today12pm:
-                logging.info(f"not in work time range. (AM 8:00 ~ PM 12:00)")
+            hours_added = datetime.timedelta(hours = 8)
+            now = datetime.datetime.now() + hours_added
+            logging.info(f"===============> date time now : {now}")
+            sleepBeging = now.replace(hour=sleep_hour_beging, minute=0, second=0, microsecond=0)
+            sleepEnd = now.replace(hour=sleep_hour_end, minute=0, second=0, microsecond=0)
+            if sleepBeging <= now  and now <= sleepEnd :
+                logging.info(f"===============> not in work time range. ({sleepBeging} ~ {sleepEnd})")
             else:
                 (shortcode, message, ig_linker, status, create_time, post_time) = post_dequeue()
                 if shortcode:
