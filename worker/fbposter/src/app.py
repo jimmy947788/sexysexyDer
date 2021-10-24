@@ -55,7 +55,7 @@ def publish_to_fb_goup(fb_model:FbPost):
  
     # 更新IG那邊的狀態
     ig_model =igService.Find(fb_model.shortcode)
-    ig_model.status = Status.FB_POST_TO_PAGE
+    ig_model.status = Status.FB_PUBLISH_TO_GROUP
     igService.Edit(ig_model)
     logging.info(f"====== update status IG model:  {ig_model.ToString()}" )
 

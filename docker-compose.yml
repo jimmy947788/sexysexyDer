@@ -2,20 +2,36 @@ version: "3.9"
 services:
     web:
         build:
-            context: ./web
+            context: ./
+            dockerfile: web/Dockerfile
         container_name: web
         restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
             - /usr/data/sexsexder/data:/usr/app/data
+            - ./session:/usr/app/session
         ports :
             - 5000:5000
         env_file:
             - prd.env
-    worker:
+    igdownloader:
         build:
-            context: ./worker
-        container_name: worker
+            context: ./
+            dockerfile: worker/igdownloader/Dockerfile
+        container_name: igdownloader
+        restart: always # 生錯誤重新啟動容器
+        volumes:
+            - /var/log/sexsexder:/usr/app/logs
+            - /usr/data/sexsexder/downloads:/usr/app/downloads
+            - ./session:/usr/app/session
+            - /usr/data/sexsexder/data:/usr/app/data
+        env_file:
+            - prd.env
+    fbposter:
+        build:
+            context: ./
+            dockerfile: worker/fbposter/Dockerfile
+        container_name: fbposter
         restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
