@@ -1,11 +1,13 @@
 
+from sexpackges.models.enum import Status
+
 class IgDownload(object):
     def __init__(self):
         self.shortcode = None
         self.link = None
         self.message = None
         self.owner = None
-        self.status = 0                #-1:失敗放棄, 0:新資料, 1.下載完成
+        self.status:Status = Status.WAIT
         self.save_path = None
         self.retry = 0
         self.create_time = None

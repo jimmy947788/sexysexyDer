@@ -7,21 +7,22 @@ import os
 import sys
 import glob
 import logging
+from sexpackges.models.enum import Status, FbPostType
 from sexpackges.models.igDownload import IgDownload
 from sexpackges.dbUtility import DbUtility  
 
 class IgService(object):
-    def __init__(self, dbpath, ig_username, ig_session_file, ig_download_folder):
+    def __init__(self, dbpath, ig_username, ig_session_file, ig_download_folder, max_retry_times:int):
         self._dbUtility = DbUtility(dbpath)
         if not self._dbUtility.TableExists("ig_download"):
             self._dbUtility.Execute(IgDownload.create_table_script(), None)
 
+        self._max_retry_times = max_retry_times
         self._ig_download_folder = ig_download_folder
         # Get instance
         self._ig_loader = instaloader.Instaloader()
         self._ig_loader.load_session_from_file(ig_username, ig_session_file) 
         logging.info(f"create ig_loader from IG session file.")
-
 
 
     def Exists(self, shortcode):
@@ -32,14 +33,14 @@ class IgService(object):
 
     def Add(self, shortcode:str, link:str, message:str):
         owner = None
-        status = 0
+        status = Status.WAIT
         save_path = None
         retry = 0
         create_time = datetime.datetime.now()
         update_time = datetime.datetime.now()
         # insert the data into table
         sql = "INSERT INTO [ig_download] (shortcode, link, [owner], message, [status], save_path, retry, create_time, update_time) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        paras = (shortcode, link, owner, message, status, save_path, retry, create_time, update_time )
+        paras = (shortcode, link, owner, message, status.value, save_path, retry, create_time, update_time )
         self._dbUtility.Execute(sql, paras)
 
     def Remove(self, shortcode ):
@@ -50,9 +51,8 @@ class IgService(object):
 
     def Edit(self, model:IgDownload):
         model.update_time = datetime.datetime.now()
-        # insert the data into table update_sql = "UPDATE [ig_post]  SET status = ?, post_time=?  WHERE shortcode=?"
         sql = "UPDATE [ig_download] SET [owner]=?, [status]=?, save_path=?, retry=?, update_time=? where shortcode=? "
-        paras = (model.owner, model.status, model.save_path, model.retry, model.update_time, model.shortcode )
+        paras = (model.owner, model.status.value, model.save_path, model.retry, model.update_time, model.shortcode )
         self._dbUtility.Execute(sql, paras)
 
     def Find(self, shortcode:str):
@@ -67,14 +67,14 @@ class IgService(object):
             model.link =  row[1]
             model.message = row[2]
             model.owner = row[3]
-            model.status = int(row[4])  #-1:失敗放棄, 0:新資料, 1.下載完成
+            model.status = Status(int(row[4]))  #-1:失敗放棄, 0:新資料, 1.下載完成
             model.save_path = row[5]
             model.retry = int(row[6])
             model.create_time = datetime.datetime.strftime(row[7],'%Y-%m-%d %H:%M:%S')  
             model.update_time= datetime.datetime.strftime(row[8],'%Y-%m-%d %H:%M:%S')  
         return model
 
-    def FindAll(self, status_filter:list=None, retryless=3) :
+    def FindAll(self, status_filter:list=None) :
         """[summary]
         查詢ig_download 資料
         
@@ -88,11 +88,11 @@ class IgService(object):
         """
         result = list()
         if status_filter:
-            sfilter = ','.join(str(x) for x in status_filter)
+            sfilter = ','.join(str(x.value) for x in status_filter)
             filter = f" and status in ({sfilter}) "
         else:
             filter = ""
-        sql = f"SELECT * FROM [ig_download] WHERE retry<{retryless} {filter} ORDER BY create_time ASC"
+        sql = f"SELECT * FROM [ig_download] WHERE retry<{self._max_retry_times } {filter} ORDER BY create_time ASC"
         logging.debug(f"[FindAll] query command {sql}")
 
         rows = self._dbUtility.QueryRows(sql, None)
@@ -102,7 +102,7 @@ class IgService(object):
             model.link =  row[1]
             model.message = row[2]
             model.owner = row[3]
-            model.status = int(row[4])  #-1:失敗放棄, 0:新資料, 1.下載完成
+            model.status = Status(int(row[4]))   #-1:失敗放棄, 0:新資料, 1.下載完成
             model.save_path = row[5]
             model.retry = int(row[6])
             model.create_time = datetime.datetime.strftime(row[7],'%Y-%m-%d %H:%M:%S')  

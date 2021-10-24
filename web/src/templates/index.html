@@ -66,6 +66,9 @@
                       <p class="text-submit">每日不發文時間
                         <strong class="grey">{{SLEEP_HOUR_BEGING}}</strong> 時 ~ <strong class="grey">{{SLEEP_HOUR_END}}</strong> 時
                       </p>
+                      <p class="text-submit">FB token 有效期限
+                        <strong class="grey">{{FB_TOKEN_EXPIRE}}</strong> <a href="https://developers.facebook.com/tools/explorer/913524566157255/" >由此延展</a>
+                      </p>
                     </form>
 
                     <div class="alert alert-danger" role="alert" id="alertMessage">
@@ -228,17 +231,17 @@
                 case -1:
                   status = "失敗";
                   break;
-                case 0:
+                case 1:
                   status = "待發送";
                   break;
-                case 1:
-                  status = "發送到粉專";
-                  break;
                 case 2:
-                  status = "分享到社團";
+                  status = "IG下載";
                   break;
                 case 3:
-                  status = "完成";
+                  status = "發送到粉專";
+                  break;
+                case 4:
+                  status = "分享到社團";
                   break;
               }
               

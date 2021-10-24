@@ -6,20 +6,21 @@ import sys
 import requests
 import urllib
 import traceback
+from sexpackges.models.enum import Status, FbPostType
 from sexpackges.models.fbPost import FbPost
 from sexpackges.dbUtility import DbUtility  
 
 class FbService(object):
-    def __init__(self, dbpath,  fb_page_id, fb_group_id, fb_access_token):
+    def __init__(self, dbpath,  fb_page_id, fb_group_id, fb_access_token, max_retry_times:int):
         self._dbUtility = DbUtility(dbpath)
         self._fb_page_id = fb_page_id
         self._fb_group_id = fb_group_id
         self._fb_access_token = fb_access_token
-        
+        self._max_retry_times = max_retry_times
         if not self._dbUtility.TableExists("fb_post"):
             self._dbUtility.Execute(FbPost.create_table_script(), None)
 
-    def Exists(self, shortcode:str, type:int):
+    def Exists(self, shortcode:str, type:FbPostType):
         """[summary]
 
         Args:
@@ -30,26 +31,26 @@ class FbService(object):
             [type]: [description]
         """
         sql = "SELECT COUNT(*) FROM [fb_post] WHERE shortcode=? and [type]=?"
-        paras = (shortcode, type)
+        paras = (shortcode, type.value)
         count = self._dbUtility.QueryCount(sql, paras)
         return count >=1
 
-    def Add(self, shortcode:str, type:int, message:str,  files:str = None):
+    def Add(self, shortcode:str, type:FbPostType, message:str,  files:str = None):
         link = None
-        status = 0
+        status = Status.WAIT
         retry = 0
         create_time = datetime.datetime.now()
         update_time = datetime.datetime.now()
         # insert the data into table
         sql = "INSERT INTO [fb_post] (shortcode, [type], [message], files, link, [status], retry, create_time, update_time) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        paras = (shortcode, type, message, files, link, status, retry, create_time, update_time )
+        paras = (shortcode, type.value, message, files, link, status.value, retry, create_time, update_time )
         self._dbUtility.Execute(sql, paras)
 
     def Edit(self, model:FbPost):
         model.update_time = datetime.datetime.now()
         # insert the data into table 
         sql = "UPDATE [fb_post] SET files=?, link=?, [status]=?, retry=?, update_time=? where id=? "
-        paras = (','.join(model.files), model.link, model.status, model.retry, model.update_time, model.id )
+        paras = (','.join(model.files), model.link, model.status.value, model.retry, model.update_time, model.id )
         self._dbUtility.Execute(sql, paras)
 
     def Remove(self, shortcode ):
@@ -76,17 +77,17 @@ class FbService(object):
         if row:
             model.id = int(row[0])
             model.shortcode = row[1]
-            model.type = int(row[2])
+            model.type = FbPostType(int(row[2]))
             model.message =  row[3]
             model.files = str(row[4]).split(",")
             model.link = row[5]
-            model.status = int(row[6])     #-1:失敗放棄, 0:新資料, 1:發送粉專 2:分享社團, 
+            model.status = Status(int(row[6]))
             model.retry = int(row[7])
             model.create_time = row[8]
             model.update_time= row[9]
         return model
 
-    def FindAll(self, status_filter:list=None, retryless=3) :
+    def FindAll(self, status_filter=None) :
         """[summary]
 
         Args:
@@ -99,21 +100,21 @@ class FbService(object):
         """
         result = list()
         if status_filter:
-            sfilter = ','.join(str(x) for x in status_filter)
+            sfilter = ','.join(str( x.value ) for x in status_filter)
             filter = f" and status in ({sfilter}) "
         else:
             filter = ""
-        sql = f"SELECT * FROM [fb_post] WHERE retry<{retryless} {filter} "
+        sql = f"SELECT * FROM [fb_post] WHERE retry<{ self._max_retry_times} {filter} "
         rows = self._dbUtility.QueryRows(sql)
         for row in rows:
             model = FbPost()
             model.id = int(row[0])
             model.shortcode = row[1]
-            model.type = int(row[2])
+            model.type =FbPostType(int(row[2]))
             model.message =  row[3]
             model.files = str(row[4]).split(",")
             model.link = row[5]
-            model.status = int(row[6])     #-1:失敗放棄, 0:新資料, 1:發送粉專 2:分享社團, 
+            model.status = Status(int(row[6]))     #-1:失敗放棄, 0:新資料, 1:發送粉專 2:分享社團, 
             model.retry = int(row[7])
             model.create_time = row[8]
             model.update_time= row[9]
@@ -220,10 +221,10 @@ class FbService(object):
             print(graph.get_connections(self._fb_group_id, 'feed'))
 
         except facebook.GraphAPIError as graphAPIError:
-            if graphAPIError.message != "Unsupported post request.":
-                logging.info(graphAPIError.message)
+            logging.error(f"graphAPIError: {graphAPIError.message}")
+            if "Unsupported request" not in graphAPIError.message :
                 logging.error(graphAPIError.message, graphAPIError)
-                raise Exception("share post to group error")
+                raise graphAPIError
         except Exception as e:
             error_class = e.__class__.__name__ #取得錯誤類型
             detail = e.args[0] #取得詳細內容
@@ -234,4 +235,4 @@ class FbService(object):
             funcName = lastCallStack[2] #取得發生的函數名稱
             errMsg = "File \"{}\", line {}, in {}: [{}] {}".format(fileName, lineNum, funcName, error_class, detail)
             logging.error(errMsg,e)
-            raise Exception("share post to group error")
+            raise e
