@@ -5,6 +5,7 @@ import os, sys
 import json
 #from requests.auth import HTTPBasicAuth
 from urllib.parse import urlparse
+from sexpackges.models.enum import Status
 sys.path.append(os.path.realpath('.'))
 from sexpackges.service.igService import IgService
 from sexpackges.service.fbService import FbService
@@ -82,7 +83,10 @@ def list_all():
     cursor = None
     try:
 
-        data = igService.FindAll()
+        data = igService.FindAll([ 
+            Status.WAIT, 
+            Status.IG_POST_DOWNLOADED,
+            Status.FB_POST_TO_PAGE])
         totals = len(data)
 
         json_string = json.dumps(data, default=lambda o: o.__dict__) #, indent=4)
