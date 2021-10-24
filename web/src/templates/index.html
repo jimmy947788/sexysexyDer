@@ -192,7 +192,7 @@
         {
           $.blockUI();
           $('.alert').hide();
-          $.post("/delete_post", { "shortcode": shortcode }, function(result){
+          $.post("/delete", { "shortcode": shortcode }, function(result){
             
             $.unblockUI(); 
             if (!result["isSuccess"]){
@@ -201,29 +201,33 @@
             }
             else
             {
-              get_posts();
+              ListAll();
             }
           }, "json");
         }
       }
 
       function get_posts(){
-        $.getJSON( "/get_posts", function( result ) {
+        $.getJSON( "/listall", function( result ) {
           if (result["isSuccess"]){
             $("#table1 > tbody").empty();
 
             var totals =  result["totals"];
             $("a[href=#tab1]").text(`等待發送(${totals})`);
             
-            for(var i=0; i <= result["data"].length -1; i++)
+            var jdata = JSON.parse(result["data"]);
+            for(var i=0; i <= jdata.length -1; i++)
             {
-              var row = result["data"][i];
-              var shortcode = row[0];
-              var ig_linker = row[2];
-              var createTime = row[4]; //Sat, 31 Jul 2021 01:54:13 GMT
-              
-              switch(row[3])
+              var row = jdata[i];
+              //var shortcode = row[0];
+              //var ig_linker = row[2];
+              //var createTime = row[4]; //Sat, 31 Jul 2021 01:54:13 GMT
+              //alert(row.status );
+              switch(row.status)
               {
+                case -1:
+                  status = "失敗";
+                  break;
                 case 0:
                   status = "待發送";
                   break;
@@ -239,10 +243,10 @@
               }
               
               html = `<tr>`;
-              html += `<td> <a href='${ig_linker}'  target='_blank'>${shortcode}</a></td>`;
+              html += `<td> <a href='${row.link}'  target='_blank'>${row.shortcode}</a></td>`;
               html += `<td>${status}</td>`;
-              html += `<td>${createTime}</td>`;
-              html += `<td><a class='theme_button' href='#' onclick="delete_post('${shortcode}');">刪除</a></td>`;
+              html += `<td>${row.update_time}</td>`;
+              html += `<td><a class='theme_button' href='#' onclick="delete_post('${row.shortcode}');">刪除</a></td>`;
               html += `</tr>`;
               $("#table1 > tbody").append(html);
             }
@@ -257,7 +261,7 @@
            "message" : $("#txtMessage").val(),
         };
           
-        $.post( "/add_post", psot_data, function( result ) {
+        $.post( "/add", psot_data, function( result ) {
           $.unblockUI(); 
           if (!result["isSuccess"]){
             $('.alert > span').text(result["message"]);

@@ -2,12 +2,13 @@ from flask import Flask, make_response, render_template, request
 from flask import url_for, redirect, flash, jsonify
 import logging
 import os, sys
+import json
 from dotenv import load_dotenv
-from requests.auth import HTTPBasicAuth
-import re
+#from requests.auth import HTTPBasicAuth
 import datetime
-import sqlite3
 from urllib.parse import urlparse
+sys.path.append(os.path.realpath('.'))
+from sexpackges.service.igService import IgService
 
 app = Flask(__name__)
 
@@ -18,7 +19,6 @@ def findShortcode(url):
     # path =/reel/CR_QcmBBlQ2/
     # path =/p/CR_QcmBBlQ2/
     return u.path.split('/')[-2:-1][0]
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -35,8 +35,8 @@ def index():
     return render_template('index.html', POST_DELAY=post_delay, Message=message, SLEEP_HOUR_BEGING=sleep_hour_beging, SLEEP_HOUR_END=sleep_hour_end)
 
 
-@app.route('/delete_post', methods=['POST'])
-def delete_post():
+@app.route('/delete', methods=['POST'])
+def delete():
     connection = None
     cursor = None
     try:
@@ -46,18 +46,7 @@ def delete_post():
         shortcode = request.form.get('shortcode')
         logging.info(f"delete post shortcode : {shortcode}")
 
-        # make the database connection with detect_types 
-        connection = sqlite3.connect(sqlite_path,
-            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
-        cursor = connection.cursor()
-
-        # insert the data into table
-        delete_sql = "DELETE FROM [ig_post]  WHERE shortcode=?"
-        delete_data = (shortcode, )
-        cursor.execute(delete_sql, delete_data)
-
-        # close the cursor and database connection 
-        connection.commit()
+        igService.Remove(shortcode)
         
         result = {
             "isSuccess": True,
@@ -65,7 +54,7 @@ def delete_post():
             "data" : None
         }
     except Exception as e:
-        logging.error("call delete_post failed", exc_info=e)
+        logging.error("call delete failed", exc_info=e)
         result = {
             "isSuccess": False,
             "message" : str(e),
@@ -79,59 +68,21 @@ def delete_post():
 
     return jsonify(result)
 
-def check_shortcode_exist(shortcode):
+@app.route('/listall', methods=['GET'])
+def list_all():
     connection = None
     cursor = None
     try:
 
-        # make the database connection with detect_types 
-        connection = sqlite3.connect(sqlite_path,
-            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
-        cursor = connection.cursor()
+        data = igService.FindAll()
+        totals = len(data)
 
-        # insert the data into table
-        query_sql = "SELECT COUNT(*) FROM [ig_post] WHERE shortcode=?"
-        query_data = (shortcode, )
-        cursor.execute(query_sql, query_data)
-
-        fetchedData = cursor.fetchone()
-
-        return int(fetchedData[0]) >=1
-    except Exception as e:
-        logging.error("call check_shortcode_exist failed", exc_info=e)
-        raise Exception("check_shortcode_exist error", e)
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-@app.route('/get_posts', methods=['GET'])
-def get_posts():
-    connection = None
-    cursor = None
-    try:
-
-        # make the database connection with detect_types 
-        connection = sqlite3.connect(sqlite_path,
-            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
-        cursor = connection.cursor()
-
-        # insert the data into table
-        query_sql = "SELECT * FROM [ig_post] WHERE status <:status ORDER BY create_time ASC"
-        query_data = { "status": 3 } # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
-        cursor.execute(query_sql, query_data)
-        fetchedData = cursor.fetchall()
-        
-        query_sql = "SELECT COUNT(*) FROM [ig_post] WHERE status <:status"
-        query_data = { "status": 3 } # 0:待發送, 1:粉專發完成 2:社團分享完成, 3:結束
-        cursor.execute(query_sql, query_data)
-        totals = cursor.fetchone()[0]
-
+        json_string = json.dumps(data, default=lambda o: o.__dict__) #, indent=4)
+        logging.debug(json_string)
         result = {
             "isSuccess": True,
             "message" : None,
-            "data" : fetchedData,
+            "data" :  json_string,
             "totals" : totals
         }
     except Exception as e:
@@ -149,8 +100,8 @@ def get_posts():
 
     return jsonify(result)
 
-@app.route('/add_post', methods=['POST'])
-def add_post():
+@app.route('/add', methods=['POST'])
+def add():
 
     connection = None
     cursor = None
@@ -167,21 +118,10 @@ def add_post():
 
         logging.info(f"shortcode : {shortcode}")
 
-        if check_shortcode_exist(shortcode):
+        if igService.Exists(shortcode):
             raise Exception(f"{shortcode} 已經排入發送")
 
-        # make the database connection with detect_types 
-        connection = sqlite3.connect(sqlite_path,
-            detect_types=sqlite3.PARSE_DECLTYPES |sqlite3.PARSE_COLNAMES)
-        cursor = connection.cursor()
-
-        # insert the data into table
-        insert_sql = "INSERT INTO [ig_post] (shortcode, message, ig_linker, status, create_time, post_time) VALUES ( ?, ?, ?, ?, ?, ?)"
-        insert_data = (shortcode, message, igLinker, 0, datetime.datetime.now(), datetime.datetime.now())
-        cursor.execute(insert_sql, insert_data)
-
-        # close the cursor and database connection 
-        connection.commit()
+        igService.Add(shortcode, igLinker, message)
         
         result = {
             "isSuccess": True,
@@ -204,9 +144,9 @@ def add_post():
 
 if __name__ == "__main__":
     global post_delay
-    global sqlite_path
     global sleep_hour_beging
     global sleep_hour_end
+    global igService
 
     load_dotenv() 
     
@@ -248,6 +188,8 @@ if __name__ == "__main__":
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     logging.info(env_text)
+
+    igService = IgService(sqlite_path, id_username, ig_session_file, ig_download_folder)
 
     app.config['TEMPLATES_AUTO_RELOAD'] = True      
     app.jinja_env.auto_reload = True
