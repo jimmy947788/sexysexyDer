@@ -149,4 +149,4 @@ sexsexder.log
 instaloader-session
 .env
 prd.env
-.pyc
+*.pyc 
