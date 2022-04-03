@@ -40,3 +40,13 @@ services:
             - /usr/data/sexsexder/data:/usr/app/data
         env_file:
             - .env
+    mariadb:
+        image: lscr.io/linuxserver/mariadb
+        container_name: sexsexder-mariadb
+        env_file:
+            - .env
+        volumes:
+            - /usr/sexsexder/db:/config 
+        ports:
+            - 3306:3306
+        restart: unless-stopped

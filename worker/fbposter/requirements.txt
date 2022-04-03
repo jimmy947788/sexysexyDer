@@ -1,3 +1,0 @@
-instaloader==4.7.1
-facebook-sdk==3.1.0
-python-dotenv==0.17.1

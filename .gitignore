@@ -146,8 +146,7 @@ __pycache__/
 src/__pycache__/
 
 sexsexder.log
-instaloader-session
 .env
 prd.env
 *.pyc 
-ig_sessions/
+ig_sessions/session-*
