@@ -1,10 +1,10 @@
 version: "3.9"
 services:
-    web:
+    website:
         build:
             context: ./
             dockerfile: web/Dockerfile
-        container_name: web
+        container_name: website.local
         restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
@@ -18,7 +18,7 @@ services:
         build:
             context: ./
             dockerfile: worker/igdownloader/Dockerfile
-        container_name: igdownloader
+        container_name: igdownloader.local
         restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
@@ -31,7 +31,7 @@ services:
         build:
             context: ./
             dockerfile: worker/fbposter/Dockerfile
-        container_name: fbposter
+        container_name: fbposter.local
         restart: always # 生錯誤重新啟動容器
         volumes:
             - /var/log/sexsexder:/usr/app/logs
@@ -41,8 +41,8 @@ services:
         env_file:
             - .env
     mariadb:
-        image: lscr.io/linuxserver/mariadb
-        container_name: sexsexder-mariadb
+        image: lscr.io/linuxserver/mariadb:10-jammy
+        container_name: mariadb.local
         env_file:
             - .env
         volumes:
